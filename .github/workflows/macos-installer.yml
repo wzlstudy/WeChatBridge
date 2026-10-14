@@ -1,0 +1,215 @@
+name: macOS installer
+
+# Builds the drag-to-Applications DMG for macOS 12 Monterey on a GitHub-hosted
+# runner, because the Swift 6 toolchain this package needs cannot run on
+# Monterey itself.
+#
+# The build is the same one `mise run bundle` performs locally: Universal 2,
+# ad-hoc signed, shared storage. No Apple Developer certificate is involved, so
+# the app is not notarized and the extension reaches the app through the
+# home-relative temporary exception rather than an app group — which is exactly
+# what a local development build does.
+#
+# Every claim this job makes about the finished installer is checked after the
+# bundle is assembled, and again on the image the user actually mounts: the
+# architectures inside it, the minimum system version of every Mach-O, the
+# twelve Share-menu entries and the login helper, the shared resources and the
+# signatures. A DMG that fails any of them never reaches the artifact upload.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "macos/**"
+      - "shared/**"
+      - ".github/workflows/macos-installer.yml"
+  pull_request:
+    paths:
+      - "macos/**"
+      - "shared/**"
+      - ".github/workflows/macos-installer.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: macos-installer-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  installer:
+    runs-on: macos-15
+    # A Finder that never answers would otherwise hold the job until GitHub's
+    # six-hour ceiling; the DMG step has its own watchdog below.
+    timeout-minutes: 45
+    env:
+      CONFIG: release
+      ARCHS: arm64 x86_64
+      # Ad-hoc: there is no Developer ID identity on a hosted runner, and the
+      # build would fail if it looked for one.
+      IDENTITY: "-"
+      DISTRIBUTION: "0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Show toolchain
+        run: |
+          set -o pipefail
+          {
+            swift --version
+            sw_vers
+            xcodebuild -version
+          } 2>&1 | tee "$RUNNER_TEMP/00-toolchain.log"
+
+      - name: Run tests
+        working-directory: macos
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee "$RUNNER_TEMP/01-tests.log"
+
+      - name: Check localizations
+        working-directory: macos
+        run: |
+          set -o pipefail
+          swift Scripts/check-localizations.swift 2>&1 | tee "$RUNNER_TEMP/02-localizations.log"
+
+      - name: Check release configuration
+        run: |
+          set -o pipefail
+          macos/Scripts/check-release-config.sh 2>&1 | tee "$RUNNER_TEMP/03-release-config.log"
+
+      - name: Assemble 微信流.app
+        run: |
+          set -o pipefail
+          macos/Scripts/make-app.sh 2>&1 | tee "$RUNNER_TEMP/04-bundle.log"
+
+      - name: Verify the bundle
+        run: |
+          set -o pipefail
+          macos/Scripts/verify-macos12-bundle.sh 2>&1 | tee "$RUNNER_TEMP/05-verify.log"
+
+      - name: Build the DMG
+        run: |
+          set -o pipefail
+          source macos/Scripts/share-slots.sh
+          APP="macos/dist/$APP_BUNDLE_NAME"
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' macos/Resources/Info.plist)"
+          DMG="macos/dist/WeChatBridge-$VERSION-macos12.dmg"
+          LOG="$RUNNER_TEMP/06-dmg.log"
+          rm -f "$DMG" "$DMG.sha256"
+
+          # Finder draws the window the image opens with. It exists in the
+          # runner's session, but a hosted runner is not a desk: if it does not
+          # answer within three minutes the image is built without its window
+          # layout rather than waiting on it.
+          macos/Scripts/make-dmg.sh "$APP" "$DMG" "$VERSION" > "$LOG" 2>&1 &
+          DMG_PID=$!
+          ( sleep 180; kill -TERM "$DMG_PID" 2>/dev/null ) &
+          WATCHDOG_PID=$!
+          DMG_STATUS=0
+          wait "$DMG_PID" || DMG_STATUS=$?
+          kill "$WATCHDOG_PID" 2>/dev/null || true
+
+          if [ "$DMG_STATUS" -ne 0 ]; then
+            {
+              echo "styled DMG failed (status $DMG_STATUS); falling back to an unstyled image"
+              echo "--- make-dmg.sh output ---"
+              tail -c 20000 "$LOG" || true
+            } | tee -a "$LOG"
+            rm -f "$DMG"
+            STAGE="$(mktemp -d)"
+            ditto "$APP" "$STAGE/$APP_BUNDLE_NAME"
+            ln -s /Applications "$STAGE/Applications"
+            hdiutil create -volname "${APP_BUNDLE_NAME%.app}" -srcfolder "$STAGE" \
+              -fs HFS+ -format UDZO -ov "$DMG" >> "$LOG" 2>&1
+            hdiutil verify "$DMG" >> "$LOG" 2>&1
+            rm -rf "$STAGE"
+          fi
+
+          ( cd "$(dirname "$DMG")" && shasum -a 256 "$(basename "$DMG")" ) | tee "$DMG.sha256"
+
+      - name: Verify the disk image
+        run: |
+          set -o pipefail
+          source macos/Scripts/share-slots.sh
+          VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' macos/Resources/Info.plist)"
+          DMG="macos/dist/WeChatBridge-$VERSION-macos12.dmg"
+          MOUNT="$(mktemp -d)"
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT" >/dev/null
+          trap 'hdiutil detach "$MOUNT" >/dev/null 2>&1 || true' EXIT
+          if [ ! -d "$MOUNT/$APP_BUNDLE_NAME" ]; then
+            echo "the image does not carry $APP_BUNDLE_NAME" >&2
+            exit 1
+          fi
+          if [ ! -L "$MOUNT/Applications" ]; then
+            echo "the image does not offer the Applications link" >&2
+            exit 1
+          fi
+          # The payload of the image, not the copy that was signed: mounting is
+          # where a truncated or re-laid-out bundle would show up.
+          macos/Scripts/verify-macos12-bundle.sh "$MOUNT/$APP_BUNDLE_NAME" 2>&1 | tee "$RUNNER_TEMP/07-verify-dmg.log"
+
+      - name: Summarize
+        if: always()
+        run: |
+          {
+            echo "### macOS 12 installer"
+            echo ""
+            DMGS=(macos/dist/WeChatBridge-*-macos12.dmg)
+            if [ -f "${DMGS[0]}" ]; then
+              for DMG in "${DMGS[@]}"; do
+                echo "- image: \`$(basename "$DMG")\` ($(du -h "$DMG" | cut -f1))"
+              done
+              for SUM in macos/dist/WeChatBridge-*-macos12.dmg.sha256; do
+                if [ -f "$SUM" ]; then
+                  echo "- checksum: \`$(cat "$SUM")\`"
+                fi
+              done
+            else
+              echo "- **no image was produced**"
+            fi
+            echo ""
+            VERIFY="$RUNNER_TEMP/05-verify.log"
+            if [ -f "$VERIFY" ]; then
+              echo "<details><summary>bundle verification</summary>"
+              echo ""
+              echo '```'
+              cat "$VERIFY"
+              echo '```'
+              echo ""
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The tests and the toolchain build log are long; a failed run is
+      # otherwise only readable with a signed-in log viewer.
+      - name: Summarize the failing log
+        if: failure()
+        run: |
+          {
+            echo "### Failing output"
+            echo ""
+            for LOG in "$RUNNER_TEMP"/*.log; do
+              [ -f "$LOG" ] || continue
+              echo "<details><summary>$(basename "$LOG")</summary>"
+              echo ""
+              echo '```'
+              tail -c 40000 "$LOG"
+              echo '```'
+              echo ""
+              echo "</details>"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: WeChatBridge-macos12-${{ github.run_number }}
+          path: |
+            macos/dist/WeChatBridge-*-macos12.dmg
+            macos/dist/WeChatBridge-*-macos12.dmg.sha256
+          if-no-files-found: error
+          retention-days: 30
