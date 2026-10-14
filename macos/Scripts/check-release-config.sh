@@ -16,10 +16,11 @@ SHARED="$REPO_ROOT/shared"
 source "$ROOT/Scripts/share-slots.sh"
 APP_INFO="$ROOT/Resources/Info.plist"
 SHARE_INFO="$ROOT/Resources/Share-Info.plist"
+LOGIN_ITEM_INFO="$ROOT/Resources/LoginItem-Info.plist"
 APP_ENTITLEMENTS="$ROOT/Resources/WeChatBridge.entitlements"
 SHARE_ENTITLEMENTS="$ROOT/Resources/WeChatBridgeShare.entitlements"
 
-plutil -lint "$APP_INFO" "$SHARE_INFO" "$APP_ENTITLEMENTS" "$SHARE_ENTITLEMENTS" >/dev/null
+plutil -lint "$APP_INFO" "$SHARE_INFO" "$LOGIN_ITEM_INFO" "$APP_ENTITLEMENTS" "$SHARE_ENTITLEMENTS" >/dev/null
 plutil -lint "$ROOT"/Resources/Localizations/*/*.strings "$ROOT"/Resources/ShareLocalizations/*/*/*.strings >/dev/null
 python3 -m json.tool "$SHARED/Skills/catalog.json" >/dev/null
 
@@ -34,6 +35,26 @@ APP_ID="$(read_plist "$APP_INFO" CFBundleIdentifier)"
 APP_GROUP="$(read_plist "$APP_INFO" DKAppGroupIdentifier)"
 STORAGE_MODE="$(read_plist "$APP_INFO" DKStorageMode)"
 SHARE_STORAGE_MODE="$(read_plist "$SHARE_INFO" DKStorageMode)"
+LOGIN_ITEM_ID="$(read_plist "$LOGIN_ITEM_INFO" CFBundleIdentifier)"
+
+if ! grep -Fq 'platforms: [.macOS(.v12)]' "$ROOT/Package.swift"; then
+	echo "Swift package must target macOS 12" >&2
+	exit 1
+fi
+for INFO in "$APP_INFO" "$SHARE_INFO" "$LOGIN_ITEM_INFO"; do
+	if [ "$(read_plist "$INFO" LSMinimumSystemVersion)" != "12.0" ]; then
+		echo "$(basename "$INFO") must declare macOS 12.0 as its minimum system version" >&2
+		exit 1
+	fi
+done
+if [ "$LOGIN_ITEM_ID" != "$APP_ID.LoginItem" ]; then
+	echo "login item identifier must be $APP_ID.LoginItem" >&2
+	exit 1
+fi
+if [ "$(read_plist "$LOGIN_ITEM_INFO" CFBundleExecutable)" != "WeChatBridgeLoginItem" ]; then
+	echo "login item executable name is inconsistent" >&2
+	exit 1
+fi
 
 case "$STORAGE_MODE" in
 	app-group|shared) ;;
@@ -201,8 +222,11 @@ fi
 # 7. Versions must move together: the extension reports its own version in the
 #    diagnostics a field report is built from.
 for KEY in CFBundleShortVersionString CFBundleVersion; do
-	if [ "$(read_plist "$APP_INFO" "$KEY")" != "$(read_plist "$SHARE_INFO" "$KEY")" ]; then
-		echo "$KEY differs between the app and the extension" >&2
+	APP_VALUE="$(read_plist "$APP_INFO" "$KEY")"
+	SHARE_VALUE="$(read_plist "$SHARE_INFO" "$KEY")"
+	LOGIN_ITEM_VALUE="$(read_plist "$LOGIN_ITEM_INFO" "$KEY")"
+	if [ "$APP_VALUE" != "$SHARE_VALUE" ] || [ "$APP_VALUE" != "$LOGIN_ITEM_VALUE" ]; then
+		echo "$KEY differs between the app, its extension and login helper" >&2
 		exit 1
 	fi
 done

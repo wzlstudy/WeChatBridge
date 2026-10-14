@@ -52,8 +52,8 @@ struct SettingsActionList: View {
                 }
             }
             .frame(height: min(contentHeight, Self.maxHeight))
-            .scrollBounceBehavior(.basedOnSize)
-            .onChange(of: highlighted) { _, value in
+            .settingsScrollBounceBasedOnSize()
+            .onChange(of: highlighted) { value in
                 if let value { reader.scrollTo(value) }
             }
         }
@@ -61,16 +61,21 @@ struct SettingsActionList: View {
         .background(Theme.surface)
         .focusable()
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .onAppear {
             // No selection to return to, so the keyboard starts at the top.
             highlighted = items.first?.id
             focused = true
         }
-        .onKeyPress(.downArrow) { move(1); return .handled }
-        .onKeyPress(.upArrow) { move(-1); return .handled }
-        .onKeyPress(.return) { commit(); return .handled }
-        .onKeyPress(.space) { commit(); return .handled }
+        .settingsKeyCommands(isActive: focused) { command in
+            switch command {
+            case .down: move(1)
+            case .up: move(-1)
+            case .activate, .space: commit()
+            case .left, .right: return false
+            }
+            return true
+        }
         .onExitCommand(perform: dismiss)
         .accessibilityElement(children: .contain)
     }
@@ -153,7 +158,7 @@ struct SettingsMoreActionsButton: View {
         }
         .buttonStyle(IconButtonStyle(size: Self.side, staticFeedback: true))
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .modifier(SettingsFocusRing(focused: focused, radius: Self.side / 2))
         .fixedSize()
         // NSPopover brings its own arrival, which is the whole reason this is a
@@ -165,7 +170,7 @@ struct SettingsMoreActionsButton: View {
         }
         // Focus stays on the trigger, so the next Tab carries on from here
         // rather than from the top of the pane.
-        .onChange(of: expanded) { _, value in if !value { focused = true } }
+        .onChange(of: expanded) { value in if !value { focused = true } }
         .help(L10n.text("更多操作"))
         .accessibilityLabel(Text(L10n.text("更多操作")))
         .accessibilityIdentifier(identifier)

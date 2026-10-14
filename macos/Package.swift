@@ -1,16 +1,16 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// WeChatBridge ships two signed Mach-O binaries in one bundle: the resident menu bar
-// app and the `com.apple.share-services` extension inside it. SwiftPM has no
-// notion of an `.appex`, so both are plain executables here and
-// `Scripts/make-app.sh` assembles and signs the bundle around them.
+// WeChatBridge ships a menu bar app, a legacy login-item helper, and the
+// `com.apple.share-services` extension in one bundle. SwiftPM has no notion of
+// an `.appex` or a nested helper app, so `Scripts/make-app.sh` assembles them.
 let package = Package(
     name: "WeChatBridge",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v12)],
     products: [
         .executable(name: "WeChatBridge", targets: ["WeChatBridgeApp"]),
         .executable(name: "WeChatBridgeShare", targets: ["WeChatBridgeShare"]),
+        .executable(name: "WeChatBridgeLoginItem", targets: ["WeChatBridgeLoginItem"]),
         .library(name: "WeChatBridgeCore", targets: ["WeChatBridgeCore"]),
     ],
     dependencies: [
@@ -55,6 +55,10 @@ let package = Package(
                     "-Xlinker", "-application_extension",
                 ])
             ]
+        ),
+        .executableTarget(
+            name: "WeChatBridgeLoginItem",
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(
             name: "WeChatBridgeDeliveryTests",

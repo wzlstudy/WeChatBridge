@@ -130,16 +130,16 @@ struct SettingsView: View {
                     .padding(.vertical, Space.xl)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .scrollBounceBehavior(.basedOnSize)
+                .settingsScrollBounceBasedOnSize()
                 // Without this the pane opens scrolled to whichever control
                 // AppKit made first responder, which hides the page title.
-                .defaultScrollAnchor(.top)
+                .settingsTopScrollAnchor()
                 .id(router.tab)
             }
         }
         .frame(minWidth: Metrics.settingsWidth, minHeight: Metrics.settingsHeight)
         .background(Theme.raised)
-        .defaultFocus($initialFocus, true)
+        .settingsDefaultFocus($initialFocus, true)
         .onAppear { authorization.refresh() }
         .modifier(SettingsFocusScope())
     }
@@ -218,7 +218,7 @@ private struct SettingsNavItem: View {
         }
         .buttonStyle(PlainPressButtonStyle(staticFeedback: true))
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .modifier(SettingsFocusRing(focused: focused, radius: Radius.control))
         .onHover { hovering = $0 }
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])

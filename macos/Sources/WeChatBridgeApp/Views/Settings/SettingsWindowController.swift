@@ -58,7 +58,9 @@ final class SettingsWindowController {
         // preferred content size at the window and AppKit adds a title bar's
         // 28 pt on top of it, so a 560 pt design came out 588 pt tall. The size
         // here is not negotiable, so the controller does not get a vote.
-        controller.sizingOptions = []
+        if #available(macOS 13.0, *) {
+            controller.sizingOptions = []
+        }
         // Nor does the pane: SwiftUI reports the pane's own layout minimum as
         // constraints on the hosting view, and AppKit sizes the window to
         // satisfy them — the 记录 pane asked for a 1521 pt window on its own,

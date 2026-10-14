@@ -43,6 +43,7 @@ APP="${APP_PATH:-$ROOT/dist/$APP_BUNDLE_NAME}"
 BUILD_ROOT="${BUILD_ROOT:-$ROOT/.build/wechatbridge-bundle}"
 APP_INFO="$ROOT/Resources/Info.plist"
 SHARE_INFO="$ROOT/Resources/Share-Info.plist"
+LOGIN_ITEM_INFO="$ROOT/Resources/LoginItem-Info.plist"
 APP_ENTITLEMENTS="$ROOT/Resources/WeChatBridge.entitlements"
 SHARE_ENTITLEMENTS="$ROOT/Resources/WeChatBridgeShare.entitlements"
 VERSION="${VERSION:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP_INFO")}"
@@ -72,6 +73,7 @@ fi
 
 APP_BINARIES=()
 SHARE_BINARIES=()
+LOGIN_ITEM_BINARIES=()
 BIN_DIRS=()
 for ARCH in "${ARCH_LIST[@]}"; do
 	case "$ARCH" in
@@ -81,8 +83,9 @@ for ARCH in "${ARCH_LIST[@]}"; do
 	SCRATCH="$BUILD_ROOT/$ARCH"
 	swift build -c "$CONFIG" --triple "$ARCH-apple-macosx" --scratch-path "$SCRATCH" --product WeChatBridge
 	swift build -c "$CONFIG" --triple "$ARCH-apple-macosx" --scratch-path "$SCRATCH" --product WeChatBridgeShare
+	swift build -c "$CONFIG" --triple "$ARCH-apple-macosx" --scratch-path "$SCRATCH" --product WeChatBridgeLoginItem
 	BIN_DIR="$(swift build -c "$CONFIG" --triple "$ARCH-apple-macosx" --scratch-path "$SCRATCH" --show-bin-path)"
-	for PRODUCT in WeChatBridge WeChatBridgeShare; do
+	for PRODUCT in WeChatBridge WeChatBridgeShare WeChatBridgeLoginItem; do
 		if [ ! -x "$BIN_DIR/$PRODUCT" ]; then
 			echo "missing $PRODUCT executable for $ARCH: $BIN_DIR/$PRODUCT" >&2
 			exit 1
@@ -94,6 +97,7 @@ for ARCH in "${ARCH_LIST[@]}"; do
 	done
 	APP_BINARIES+=("$BIN_DIR/WeChatBridge")
 	SHARE_BINARIES+=("$BIN_DIR/WeChatBridgeShare")
+	LOGIN_ITEM_BINARIES+=("$BIN_DIR/WeChatBridgeLoginItem")
 	BIN_DIRS+=("$BIN_DIR")
 done
 
@@ -114,7 +118,7 @@ if ! nm -u "${SHARE_BINARIES[0]}" | grep -Fq '_NSExtensionMain'; then
 fi
 
 rm -rf "$APP"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Frameworks" "$APP/Contents/Resources" "$APP/Contents/PlugIns"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Frameworks" "$APP/Contents/Resources" "$APP/Contents/PlugIns" "$APP/Contents/Library/LoginItems"
 
 lipo -create "${APP_BINARIES[@]}" -output "$APP/Contents/MacOS/WeChatBridge"
 ditto "$SPARKLE_FRAMEWORK" "$APP/Contents/Frameworks/Sparkle.framework"
@@ -133,6 +137,14 @@ if ! otool -l "$APP/Contents/MacOS/WeChatBridge" | grep -Fq '@executable_path/..
 fi
 SHARE_BINARY="$BUILD_ROOT/WeChatBridgeShare"
 lipo -create "${SHARE_BINARIES[@]}" -output "$SHARE_BINARY"
+LOGIN_ITEM_BINARY="$BUILD_ROOT/WeChatBridgeLoginItem"
+lipo -create "${LOGIN_ITEM_BINARIES[@]}" -output "$LOGIN_ITEM_BINARY"
+for ARCH in "${ARCH_LIST[@]}"; do
+	if ! lipo -archs "$LOGIN_ITEM_BINARY" | tr ' ' '\n' | grep -Fxq "$ARCH"; then
+		echo "WeChatBridgeLoginItem does not contain requested architecture $ARCH" >&2
+		exit 1
+	fi
+done
 
 cp "$APP_INFO" "$APP/Contents/Info.plist"
 printf 'APPL????' > "$APP/Contents/PkgInfo"
@@ -142,7 +154,24 @@ printf 'APPL????' > "$APP/Contents/PkgInfo"
 /usr/libexec/PlistBuddy -c "Set :DKStorageMode $STORAGE_MODE" "$APP/Contents/Info.plist"
 
 APP_ID="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_INFO")"
+APP_MINIMUM_OS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$APP_INFO")"
 MINIMUM_OS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$SHARE_INFO")"
+LOGIN_ITEM_MINIMUM_OS="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$LOGIN_ITEM_INFO")"
+if [ "$APP_MINIMUM_OS" != "$MINIMUM_OS" ] || [ "$APP_MINIMUM_OS" != "$LOGIN_ITEM_MINIMUM_OS" ]; then
+	echo "bundle minimum system versions differ: app=$APP_MINIMUM_OS share=$MINIMUM_OS helper=$LOGIN_ITEM_MINIMUM_OS" >&2
+	exit 1
+fi
+LOGIN_ITEM_APP="$APP/Contents/Library/LoginItems/WeChatBridgeLoginItem.app"
+mkdir -p "$LOGIN_ITEM_APP/Contents/MacOS"
+cp "$LOGIN_ITEM_BINARY" "$LOGIN_ITEM_APP/Contents/MacOS/WeChatBridgeLoginItem"
+cp "$LOGIN_ITEM_INFO" "$LOGIN_ITEM_APP/Contents/Info.plist"
+printf 'APPL????' > "$LOGIN_ITEM_APP/Contents/PkgInfo"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$LOGIN_ITEM_APP/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$LOGIN_ITEM_APP/Contents/Info.plist"
+for LPROJ in "$ROOT/Resources/Localizations"/*.lproj; do
+	mkdir -p "$LOGIN_ITEM_APP/Contents/Resources/$(basename "$LPROJ")"
+	cp "$LPROJ/InfoPlist.strings" "$LOGIN_ITEM_APP/Contents/Resources/$(basename "$LPROJ")/InfoPlist.strings"
+done
 APPEX_PATHS=()
 
 # One executable, one bundle per share entry. The extensions differ only in identity, so
@@ -275,7 +304,7 @@ ditto "$SHARED/Skills" "$APP/Contents/Resources/Skills"
 # Repository fallbacks are useful for `swift run`, but a distributable binary
 # must never reveal the builder's absolute checkout path.
 if [ "$CONFIG" = "release" ]; then
-	RELEASE_BINARIES=("$APP/Contents/MacOS/WeChatBridge")
+	RELEASE_BINARIES=("$APP/Contents/MacOS/WeChatBridge" "$LOGIN_ITEM_APP/Contents/MacOS/WeChatBridgeLoginItem")
 	for SLOT_ROW in "${SHARE_SLOTS[@]}"; do
 		IFS='|' read -r _ APPEX_NAME _ _ _ <<< "$SLOT_ROW"
 		RELEASE_BINARIES+=("$APP/Contents/PlugIns/$APPEX_NAME.appex/Contents/MacOS/$APPEX_NAME")
@@ -315,6 +344,7 @@ for COMPONENT in \
 	fi
 done
 codesign "${SIGN_FLAGS[@]}" "$SPARKLE"
+codesign "${SIGN_FLAGS[@]}" "$LOGIN_ITEM_APP"
 for SLOT_APPEX in "${APPEX_PATHS[@]}"; do
 	codesign "${SIGN_FLAGS[@]}" --entitlements "$BUILT_ENTITLEMENTS/WeChatBridgeShare.entitlements" "$SLOT_APPEX"
 done

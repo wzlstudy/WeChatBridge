@@ -272,18 +272,18 @@ private struct CollectionPanelView: View {
             }
             .padding(Space.l)
         }
-        .scrollBounceBehavior(.basedOnSize)
+        .settingsScrollBounceBasedOnSize()
         .frame(width: coordinator.isDelivery ? 390 : 344)
         .frame(maxHeight: FloatingCapsule.visibleFrame.height - 2 * Metrics.screenMargin)
         .fixedSize(horizontal: false, vertical: true)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: Radius.panel))
         .overlay(RoundedRectangle(cornerRadius: Radius.panel).strokeBorder(Palette.hairline, lineWidth: Stroke.hairline))
-        .onChange(of: coordinator.showAnchors) { _, _ in coordinatorLayout() }
-        .onChange(of: coordinator.anchorBatchID) { _, _ in coordinatorLayout() }
-        .onChange(of: coordinator.errorMessage) { _, _ in coordinatorLayout() }
-        .onChange(of: model.inboxFailure) { _, _ in coordinatorLayout() }
-        .onChange(of: model.recognizingConversations) { _, _ in coordinatorLayout() }
+        .onChange(of: coordinator.showAnchors) { _ in coordinatorLayout() }
+        .onChange(of: coordinator.anchorBatchID) { _ in coordinatorLayout() }
+        .onChange(of: coordinator.errorMessage) { _ in coordinatorLayout() }
+        .onChange(of: model.inboxFailure) { _ in coordinatorLayout() }
+        .onChange(of: model.recognizingConversations) { _ in coordinatorLayout() }
     }
 
     private func coordinatorLayout() {
@@ -369,7 +369,7 @@ private struct CollectionPanelView: View {
                 ForEach(coordinator.scenes) { Text($0.name).tag($0.id) }
             }
             .disabled(coordinator.isFileDestination)
-            .onChange(of: coordinator.selection) { _, _ in
+            .onChange(of: coordinator.selection) { _ in
                 if coordinator.isFileDestination || !coordinator.scenes.contains(where: { $0.id == coordinator.sceneID }) { coordinator.sceneID = "" }
             }
             HStack {

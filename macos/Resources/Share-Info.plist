@@ -27,7 +27,7 @@
 	<key>DKShareAction</key>
 	<string>clipboard</string>
 	<key>LSMinimumSystemVersion</key>
-	<string>14.0</string>
+	<string>12.0</string>
 	<key>NSExtension</key>
 	<dict>
 		<key>NSExtensionAttributes</key>

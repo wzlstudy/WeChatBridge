@@ -166,7 +166,7 @@ struct SettingsTextFieldStyle: TextFieldStyle {
                     .allowsHitTesting(false)
             }
             .focused($focused)
-            .focusEffectDisabled()
+            .settingsFocusEffectDisabled()
             .onHover { hovering = $0 }
             .opacity(isEnabled ? 1 : 0.45)
     }
@@ -218,7 +218,7 @@ struct SettingsOptionToggleStyle: ToggleStyle {
         }
         .buttonStyle(PlainPressButtonStyle(staticFeedback: true))
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .modifier(SettingsFocusRing(focused: focused))
         .onHover { hovering = $0 }
         .opacity(isEnabled ? 1 : 0.45)
@@ -261,16 +261,19 @@ struct SettingsSelect<Value: Hashable>: View {
         }
         .buttonStyle(SettingsControlButtonStyle())
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .modifier(SettingsFocusRing(focused: focused))
         .background {
             GeometryReader { proxy in
                 Color.clear.onAppear { width = proxy.size.width }
-                    .onChange(of: proxy.size.width) { _, value in width = value }
+                    .onChange(of: proxy.size.width) { value in width = value }
             }
         }
-        .onKeyPress(.downArrow) { expanded = true; return .handled }
-        .onKeyPress(.upArrow) { expanded = true; return .handled }
+        .settingsKeyCommands(isActive: focused) { command in
+            guard command == .down || command == .up else { return false }
+            expanded = true
+            return true
+        }
         .popover(isPresented: $expanded, arrowEdge: .bottom) {
             SettingsChoiceList(title: title, selection: selection, choices: choices, identifier: identifier) {
                 selection = $0
@@ -280,7 +283,7 @@ struct SettingsSelect<Value: Hashable>: View {
             }
             .frame(width: max(180, min(width, 420)))
         }
-        .onChange(of: expanded) { _, value in if !value { focused = true } }
+        .onChange(of: expanded) { value in if !value { focused = true } }
         .disabled(choices.isEmpty)
         .accessibilityLabel(Text(title))
         .accessibilityValue(Text(valueTitle))
@@ -338,8 +341,8 @@ struct SettingsChoiceList<Value: Hashable>: View {
                     }
                 }
                 .frame(height: min(max(CGFloat(choices.count) * (SettingsControlMetrics.height + Space.xxs) - Space.xxs, 0), 286))
-                .scrollBounceBehavior(.basedOnSize)
-                .onChange(of: highlighted) { _, value in
+                .settingsScrollBounceBasedOnSize()
+                .onChange(of: highlighted) { value in
                     if let value, value != footer?.id { reader.scrollTo(value) }
                 }
             }
@@ -353,19 +356,24 @@ struct SettingsChoiceList<Value: Hashable>: View {
         .background(Theme.surface)
         .focusable()
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .onAppear {
             highlighted = enabledChoices.contains { $0.id == selection } ? selection : enabledChoices.first?.id
             focused = true
         }
-        .onChange(of: enabledChoices.map(\.id)) { _, ids in
+        .onChange(of: enabledChoices.map(\.id)) { ids in
             if !ids.contains(where: { $0 == highlighted }) { highlighted = ids.first }
             if ids.isEmpty { dismiss() }
         }
-        .onKeyPress(.downArrow) { move(1); return .handled }
-        .onKeyPress(.upArrow) { move(-1); return .handled }
-        .onKeyPress(.return) { commit(); return .handled }
-        .onKeyPress(.space) { commit(); return .handled }
+        .settingsKeyCommands(isActive: focused) { command in
+            switch command {
+            case .down: move(1)
+            case .up: move(-1)
+            case .activate, .space: commit()
+            case .left, .right: return false
+            }
+            return true
+        }
         .onExitCommand(perform: dismiss)
         .accessibilityElement(children: .contain)
     }
@@ -460,7 +468,7 @@ struct SettingsChoiceStrip<Value: Hashable>: View {
                 }
                 .buttonStyle(SettingsChoiceButtonStyle(selected: selection == choice.id))
                 .focused($focused, equals: choice.id)
-                .focusEffectDisabled()
+                .settingsFocusEffectDisabled()
                 .modifier(SettingsFocusRing(focused: focused == choice.id,
                                             radius: SettingsControlMetrics.radius - Space.xxs))
             }
@@ -472,8 +480,14 @@ struct SettingsChoiceStrip<Value: Hashable>: View {
                 .strokeBorder(Theme.strokeStrong, lineWidth: Stroke.hairline)
                 .allowsHitTesting(false)
         }
-        .onKeyPress(.leftArrow) { move(-1); return .handled }
-        .onKeyPress(.rightArrow) { move(1); return .handled }
+        .settingsKeyCommands(isActive: focused != nil) { command in
+            switch command {
+            case .left: move(-1)
+            case .right: move(1)
+            case .up, .down, .activate, .space: return false
+            }
+            return true
+        }
         .accessibilityRepresentation {
             Picker(title, selection: $selection) {
                 ForEach(choices) { Text($0.title).tag($0.id) }

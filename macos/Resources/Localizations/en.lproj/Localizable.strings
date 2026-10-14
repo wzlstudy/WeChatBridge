@@ -110,6 +110,7 @@
 "开机后静默运行，随时响应微信转发。" = "Runs quietly after login and stays ready for WeChat forwards.";
 "还需要在系统设置里允许。" = "It still needs your approval in System Settings.";
 "打开登录项设置" = "Open Login Items Settings";
+"无法更改登录启动设置。" = "Could not change the login startup setting.";
 "应用行为" = "App Behavior";
 "在 Dock 中显示" = "Show in Dock";
 "从 Dock 快速打开微信流设置。" = "Open WeChatBridge settings quickly from the Dock.";

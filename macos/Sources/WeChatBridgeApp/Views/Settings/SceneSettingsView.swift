@@ -77,16 +77,16 @@ struct SceneSettingsView: View {
             selectedSceneID = selectedSceneID ?? preferences.scenes.scenes.first?.id
             selectedGroupKey = selectedGroupKey ?? allGroupKeys.first
         }
-        .onChange(of: preferences.scenes.scenes.map(\.id)) { _, ids in
+        .onChange(of: preferences.scenes.scenes.map(\.id)) { ids in
             if let selectedSceneID, ids.contains(selectedSceneID) { return }
             selectedSceneID = ids.first
         }
-        .onChange(of: preferences.groupMemory.keys.sorted()) { _, keys in
+        .onChange(of: preferences.groupMemory.keys.sorted()) { keys in
             if let selectedGroupKey, keys.contains(selectedGroupKey) { return }
             selectedGroupKey = keys.first
         }
         // The skills pane's 用于 N 个场景 badge lands here.
-        .onChange(of: router.skillFocus) { _, skillID in
+        .onChange(of: router.skillFocus) { skillID in
             guard let skillID else { return }
             router.skillFocus = nil
             page = .scenes
@@ -189,7 +189,7 @@ struct SceneSettingsView: View {
                     }
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .settingsScrollBounceBasedOnSize()
             Spacer(minLength: Space.s)
             VStack(alignment: .leading, spacing: 6) {
                 Button(L10n.text("导入 JSON")) { importing = true }
@@ -257,7 +257,7 @@ struct SceneSettingsView: View {
                     if !unboundGroupKeys.isEmpty { groupSection(title: L10n.text("尚未绑定"), keys: unboundGroupKeys) }
                 }
             }
-            .scrollBounceBehavior(.basedOnSize)
+            .settingsScrollBounceBasedOnSize()
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .background(Theme.surface, in: RoundedRectangle(cornerRadius: Radius.card, style: .continuous))

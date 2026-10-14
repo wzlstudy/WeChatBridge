@@ -7,7 +7,7 @@
   <p>
     <a href="https://github.com/freestylefly/WeChatBridge/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/freestylefly/WeChatBridge/ci.yml?branch=main&style=flat-square&label=build" alt="Build status" /></a>
     <a href="https://github.com/freestylefly/WeChatBridge/releases/latest"><img src="https://img.shields.io/github/v/release/freestylefly/WeChatBridge?style=flat-square&label=download" alt="Download latest release" /></a>
-    <img src="https://img.shields.io/badge/macOS-14%2B-black?style=flat-square&logo=apple" alt="macOS 14+" />
+    <img src="https://img.shields.io/badge/macOS-12%2B-black?style=flat-square&logo=apple" alt="macOS 12+" />
     <img src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.0" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" /></a>
   </p>
@@ -114,8 +114,8 @@ Full steps, permissions, and troubleshooting live in the [usage guide](USAGE_EN.
 
 ## Requirements
 
-- macOS 14 Sonoma or later
-- Xcode 16 or Command Line Tools with Swift 6 support
+- macOS 12 Monterey or later (to run the app)
+- Xcode 16 or Command Line Tools with Swift 6 support (to build from source)
 - Accessibility permission for automatic paste
 - Screen Recording permission for chat-name recognition
 

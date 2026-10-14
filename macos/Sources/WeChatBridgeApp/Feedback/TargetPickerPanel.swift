@@ -308,8 +308,8 @@ struct TargetPickerView: View {
                         }
                     }
                 }
-                .scrollBounceBehavior(.basedOnSize)
-                .onChange(of: state.highlighted) { _, highlighted in
+                .settingsScrollBounceBasedOnSize()
+                .onChange(of: state.highlighted) { highlighted in
                     guard targets.indices.contains(highlighted) else { return }
                     proxy.scrollTo(targets[highlighted].id, anchor: .center)
                 }

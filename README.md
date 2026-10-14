@@ -7,7 +7,7 @@
   <p>
     <a href="https://github.com/freestylefly/WeChatBridge/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/freestylefly/WeChatBridge/ci.yml?branch=main&style=flat-square&label=build" alt="构建状态" /></a>
     <a href="https://github.com/freestylefly/WeChatBridge/releases/latest"><img src="https://img.shields.io/github/v/release/freestylefly/WeChatBridge?style=flat-square&label=download" alt="下载最新版本" /></a>
-    <img src="https://img.shields.io/badge/macOS-14%2B-black?style=flat-square&logo=apple" alt="macOS 14+" />
+    <img src="https://img.shields.io/badge/macOS-12%2B-black?style=flat-square&logo=apple" alt="macOS 12+" />
     <img src="https://img.shields.io/badge/Swift-6.0-F05138?style=flat-square&logo=swift&logoColor=white" alt="Swift 6.0" />
     <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="MIT License" /></a>
   </p>
@@ -120,8 +120,8 @@ flowchart LR
 
 ## 系统要求
 
-- macOS 14 Sonoma 或更高版本
-- Xcode 16 或兼容 Swift 6 的 Command Line Tools
+- macOS 12 Monterey 或更高版本（运行）
+- Xcode 16 或兼容 Swift 6 的 Command Line Tools（从源码构建）
 - 使用自动粘贴时，需要在系统设置中授予辅助功能权限
 - 使用聊天名识别时，需要授予屏幕录制权限
 

@@ -342,7 +342,7 @@ private struct HistorySearchField: View {
                 .allowsHitTesting(false)
         }
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
     }
 }
 
@@ -359,7 +359,7 @@ private struct HistoryForwardButton: View {
         }
         .buttonStyle(SettingsActionButtonStyle(width: 72))
         .focused($focused)
-        .focusEffectDisabled()
+        .settingsFocusEffectDisabled()
         .modifier(SettingsFocusRing(focused: focused))
         .fixedSize()
         .popover(isPresented: $expanded, arrowEdge: .bottom) {
@@ -368,7 +368,7 @@ private struct HistoryForwardButton: View {
             }
             .frame(width: 220)
         }
-        .onChange(of: expanded) { _, value in
+        .onChange(of: expanded) { value in
             if !value { focused = true }
         }
         .accessibilityLabel(Text(L10n.text("发给…")))

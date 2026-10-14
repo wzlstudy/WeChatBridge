@@ -176,7 +176,7 @@ struct BatchConversationField: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { name = model.batchConversation(batchID) ?? "" }
-        .onChange(of: model.batchConversation(batchID)) { _, source in
+        .onChange(of: model.batchConversation(batchID)) { source in
             if !editing, let source { name = source }
         }
     }

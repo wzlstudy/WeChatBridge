@@ -277,7 +277,7 @@ private struct SkillSearchField: View {
                 .font(SettingsControlMetrics.font)
                 .foregroundStyle(Theme.ink)
                 .focused($focused)
-                .focusEffectDisabled()
+                .settingsFocusEffectDisabled()
         }
         .padding(.horizontal, SettingsControlMetrics.inset)
         .frame(height: SettingsControlMetrics.height)
