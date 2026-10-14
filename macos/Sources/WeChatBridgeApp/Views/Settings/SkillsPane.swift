@@ -60,7 +60,11 @@ struct SkillsPane: View {
                 Notice(notice.message, tone: notice.tone)
             }
         }
-        .frame(maxWidth: 980, alignment: .leading)
+        // No width cap, for the same reason 记录 has none: the skill cards are
+        // rows of a list, and the three counters above them read better the
+        // wider the grid gets. Nothing in this pane is a paragraph that wants a
+        // measured column.
+        .frame(maxWidth: .infinity, alignment: .leading)
         .fileImporter(
             isPresented: $importing,
             allowedContentTypes: [.zip]

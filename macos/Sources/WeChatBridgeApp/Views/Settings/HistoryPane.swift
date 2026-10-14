@@ -40,7 +40,12 @@ struct HistoryPane: View {
                 recordList
             }
         }
-        .frame(maxWidth: 1120, alignment: .leading)
+        // No width cap: the window is the user's to spend, and 记录 is a list of
+        // cards and rows that is meant to run to the edges of it — a pane that
+        // stops at some invented maximum leaves a third of a full-screen
+        // display empty. Everything inside compresses (the header's fitting
+        // row, the rows' flexible titles) rather than clipping, so a narrow
+        // window is not the price of a wide one.
         .frame(maxWidth: .infinity, alignment: .leading)
         .alert(L10n.text("清空全部记录？"), isPresented: $confirmingClear) {
             Button(L10n.text("取消"), role: .cancel) {}
