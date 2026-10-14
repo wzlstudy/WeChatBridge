@@ -2,7 +2,12 @@ import AppKit
 
 /// The monochrome menu-bar version of the app icon.
 enum StatusGlyph {
-    private static let size = NSSize(width: 30, height: 22)
+    /// Sized to the system's own menu bar glyphs, not to the bar: the artwork is
+    /// 60 × 44 px with its ink filling 56 × 39 of that, so a 24.5 × 18 pt canvas
+    /// draws ink of about 23 × 16 pt — the height of the battery icon next to
+    /// it. At the 30 × 22 it used to be, the ink stood 19.5 pt in a 22 pt bar and
+    /// read as oversized among its neighbours.
+    private static let size = NSSize(width: 24.5, height: 18)
     private static let templatePNG = """
         iVBORw0KGgoAAAANSUhEUgAAADwAAAAsCAYAAAA5KtvpAAAACXBIWXMAAAAAAAAAAQCEeRdzAAAG
         cUlEQVR4nO1aaYhcRRCu2R2jQTzibVDBI5oYjdePqBg88I9HEowiEdFfEi+8UdSIYiISjCIqIohx

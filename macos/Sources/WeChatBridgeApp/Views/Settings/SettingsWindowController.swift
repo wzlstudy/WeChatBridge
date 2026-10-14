@@ -93,14 +93,14 @@ final class SettingsWindowController {
         // A window that can be resized and then forgets reads as one that is
         // still fixed.
         _ = window.setFrameAutosaveName("WeChatBridgeSettings")
-        // The green button is the only way to fill a display, and AppKit does
-        // not offer full screen unless a window asks for it: measured on
-        // Monterey, a window configured as above reports no `fullScreenPrimary`
-        // and its green button zooms to the visible frame instead. What the
-        // user gets then is neither full nor square — the menu bar stays, and
-        // macOS still rounds the corners of a zoomed window. Asking for full
-        // screen is what makes those four corners right angles.
-        window.collectionBehavior.insert(.fullScreenPrimary)
+        // Deliberately without `fullScreenPrimary`, so the green button zooms to
+        // the visible frame — the behaviour menu bar apps like Bob ship, and the
+        // one this window's title bar is drawn for. Full screen is a worse deal
+        // for an accessory app than it looks: macOS gives the app a Space of its
+        // own, but an accessory app owns neither the menu bar nor the ability to
+        // activate itself, so on Monterey the window ended up on a Space the user
+        // could not reach and the traffic lights — the only way out — went with
+        // it. Zooming keeps them on screen.
         self.window = window
 
         window.makeKeyAndOrderFront(nil)
