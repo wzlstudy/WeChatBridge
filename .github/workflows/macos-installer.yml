@@ -81,10 +81,14 @@ jobs:
           set -o pipefail
           macos/Scripts/check-release-config.sh 2>&1 | tee "$RUNNER_TEMP/03-release-config.log"
 
+      # From `macos/`, the way `mise run bundle` runs it: the script builds the
+      # package that is in the working directory, and `swift build` does not
+      # look any further up than that.
       - name: Assemble 微信流.app
+        working-directory: macos
         run: |
           set -o pipefail
-          macos/Scripts/make-app.sh 2>&1 | tee "$RUNNER_TEMP/04-bundle.log"
+          Scripts/make-app.sh 2>&1 | tee "$RUNNER_TEMP/04-bundle.log"
 
       - name: Verify the bundle
         run: |
