@@ -162,7 +162,7 @@ struct OnboardingFlow: View {
             ChecklistRow(
                 done: authorization.isTrusted,
                 title: L10n.text("辅助功能"),
-                detail: L10n.text("用于激活目标应用并粘贴；只复制不需要。")
+                detail: L10n.text("用于激活目标应用并粘贴；也让群名直接读取，不靠屏幕识别。")
             ) {
                 if !authorization.isTrusted {
                     Button(L10n.text("引导授权")) { authorization.guideIfNeeded() }

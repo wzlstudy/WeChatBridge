@@ -568,29 +568,76 @@ public enum GroupTitleParser {
         }
     }
 
-    public static func parse(_ lines: [String]) -> Title? {
-        let candidates = lines.map {
-            $0.trimmingCharacters(in: .whitespacesAndNewlines)
-        }.filter { !$0.isEmpty }
+    /// A line of recognised text and where it sat in the window it was read
+    /// from, in points, measured from that window's top-left corner.
+    public struct Line: Equatable, Sendable {
+        public let text: String
+        public let minX: CGFloat
+        public let minY: CGFloat
 
-        // A group title usually carries a member count. Prefer that over
-        // unrelated chrome OCR'd from elsewhere in the same title strip.
-        for line in candidates {
-            let range = NSRange(line.startIndex..<line.endIndex, in: line)
-            if let match = try? NSRegularExpression(pattern: #"[（(]\s*(\d{1,5})\s*[)）]\s*$"#)
-                .firstMatch(in: line, range: range),
-               let full = Range(match.range(at: 0), in: line),
-               let numberRange = Range(match.range(at: 1), in: line),
-               let count = Int(line[numberRange]) {
-                let name = String(line[..<full.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !name.isEmpty { return Title(name: name, memberCount: count) }
+        public init(text: String, minX: CGFloat, minY: CGFloat) {
+            self.text = text
+            self.minX = minX
+            self.minY = minY
+        }
+    }
+
+    /// Where the conversation header sits, measured on WeChat 4.1 against a
+    /// 1680 pt window: the chat list's rows begin at x ≈ 0.04 and stay left of
+    /// 0.10, its message previews are the longest lines in the strip, and the
+    /// row that carries a member count is a *list* row, not the header. The
+    /// header itself starts at x ≈ 0.17 and sits at y ≈ 19, with the first list
+    /// row at y ≈ 64 and the first message of the conversation at y ≈ 99.
+    ///
+    /// Text alone cannot tell them apart — every candidate is a group name, and
+    /// taking the longest or the counted one once recorded the wrong group.
+    /// Geometry can: the header is the topmost line past the list column, in
+    /// the band above the first row, that reads like a name.
+    private static let chatListWidthFraction: CGFloat = 0.10
+    private static let headerBand: CGFloat = 60
+
+    public static func parse(_ lines: [Line], windowWidth: CGFloat) -> Title? {
+        let candidates = lines
+            .map {
+                Line(
+                    text: $0.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                    minX: $0.minX,
+                    minY: $0.minY
+                )
             }
-        }
-        var best: String?
-        for line in candidates where best == nil || line.count > best!.count {
-            best = line
-        }
-        return best.map { Title(name: $0, memberCount: nil) }
+            .filter { !$0.text.isEmpty }
+            .filter { $0.minX >= windowWidth * chatListWidthFraction }
+            .filter { $0.minY <= headerBand }
+            .filter { looksLikeName($0.text) }
+            .sorted { $0.minY == $1.minY ? $0.minX < $1.minX : $0.minY < $1.minY }
+
+        guard let header = candidates.first else { return nil }
+        return countSuffix(in: header.text) ?? Title(name: header.text, memberCount: nil)
+    }
+
+    /// "华东客户群 (128)" is one line: the name, then how many people are in it.
+    private static func countSuffix(in line: String) -> Title? {
+        let range = NSRange(line.startIndex..<line.endIndex, in: line)
+        guard let match = try? NSRegularExpression(pattern: #"[（(]\s*(\d{1,5})\s*[)）]\s*$"#)
+            .firstMatch(in: line, range: range),
+            let full = Range(match.range(at: 0), in: line),
+            let numberRange = Range(match.range(at: 1), in: line),
+            let count = Int(line[numberRange])
+        else { return nil }
+        let name = String(line[..<full.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        return Title(name: name, memberCount: count)
+    }
+
+    /// A name, not chrome: at least two characters, and at least half of them
+    /// letters or ideographs. Recognition turns the window's buttons into
+    /// strings like "①×09" and "+", and a chat list's clock column into
+    /// "16:48" — none of which text alone would reject.
+    private static func looksLikeName(_ text: String) -> Bool {
+        let characters = Array(text)
+        guard characters.count >= 2 else { return false }
+        let wordy = characters.filter(\.isLetter).count
+        return wordy * 2 >= characters.count
     }
 }
 

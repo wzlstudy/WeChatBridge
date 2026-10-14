@@ -109,8 +109,8 @@ enum WeChatTitleReader {
             height: titleHeight
         )
         guard let titleImage = image.cropping(to: crop),
-              let lines = recognize(titleImage),
-              let title = GroupTitleParser.parse(lines)
+              let lines = recognize(titleImage, scale: scale),
+              let title = GroupTitleParser.parse(lines, windowWidth: best.width)
         else { throw WeChatTitleReaderError.recognitionFailed }
         return title
     }
@@ -129,7 +129,11 @@ enum WeChatTitleReader {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    private static func recognize(_ image: CGImage) -> [String]? {
+    /// Every line comes back with the place it occupied in the window, in
+    /// points: the strip holds the chat list as well as the conversation
+    /// header, and only the geometry tells them apart (see
+    /// `GroupTitleParser`).
+    private static func recognize(_ image: CGImage, scale: CGFloat) -> [GroupTitleParser.Line]? {
         let request = VNRecognizeTextRequest()
         request.recognitionLevel = .accurate
         request.recognitionLanguages = ["zh-Hans", "en-US"]
@@ -139,13 +143,18 @@ enum WeChatTitleReader {
         } catch {
             return nil
         }
-        return (request.results ?? [])
-            .sorted { lhs, rhs in
-                if abs(lhs.boundingBox.midY - rhs.boundingBox.midY) > 0.01 {
-                    return lhs.boundingBox.midY > rhs.boundingBox.midY
-                }
-                return lhs.boundingBox.minX < rhs.boundingBox.minX
-            }
-            .compactMap { $0.topCandidates(1).first?.string }
+        let width = CGFloat(image.width) / max(scale, 1)
+        let height = CGFloat(image.height) / max(scale, 1)
+        return (request.results ?? []).compactMap { observation in
+            guard let text = observation.topCandidates(1).first?.string else { return nil }
+            let box = observation.boundingBox
+            // Vision measures from the bottom-left; the parser measures from
+            // the top-left corner of the window.
+            return GroupTitleParser.Line(
+                text: text,
+                minX: box.minX * width,
+                minY: (1 - box.maxY) * height
+            )
+        }
     }
 }
