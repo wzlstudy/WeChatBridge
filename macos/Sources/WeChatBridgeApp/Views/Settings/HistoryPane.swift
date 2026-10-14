@@ -85,12 +85,19 @@ struct HistoryPane: View {
     /// The width the one-line header needs. The summary is the only piece whose
     /// width moves — and it is `fixedSize`, so a header that runs out of room
     /// has to fold rather than squeeze it.
+    ///
+    /// Deliberately a little more than the parts add up to: the five gaps are
+    /// the four between the five views plus the 8 pt floor the spacer keeps, the
+    /// labels are measured in AppKit and drawn by SwiftUI, and the slack is the
+    /// difference between folding a few points early — a second line — and
+    /// folding late, which is the pane pushing the window's layout apart.
     private var wideHeaderMinimumWidth: CGFloat {
         SettingsTypeMetrics.width(of: summaryText, in: SettingsTypeMetrics.captionFont)
             + Self.searchWidth
             + SettingsTypeMetrics.actionButtonWidth(L10n.text("在 Finder 中显示"))
             + SettingsMoreActionsButton.side
-            + 4 * Space.s
+            + 5 * Space.s
+            + Space.s
     }
 
     private var summaryText: String {

@@ -118,7 +118,9 @@ struct CollectionHistoryCard: View {
     }
 
     /// What 「查看批次」 and the delivery buttons need to share one line: the two
-    /// groups, the gap between them, and the 8 pt floor the spacer keeps.
+    /// groups, the three gaps around the 8 pt spacer between them, and the same
+    /// few points of slack the 记录 header keeps — an estimate that comes out
+    /// short would put the whole window's layout under the card.
     private var wideRowWidth: CGFloat {
         var controlsWidth = SettingsTypeMetrics.actionButtonWidth(
             collection.status == .retry ? L10n.text("重试交付") : L10n.text("完成并发送")
@@ -128,7 +130,7 @@ struct CollectionHistoryCard: View {
         }
         return SettingsTypeMetrics.actionButtonWidth(
             expanded ? L10n.text("收起批次") : L10n.text("查看批次")
-        ) + 2 * Space.s + controlsWidth
+        ) + 3 * Space.s + controlsWidth + Space.s
     }
 
     private var controls: some View {

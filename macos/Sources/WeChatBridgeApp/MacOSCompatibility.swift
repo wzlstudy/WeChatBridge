@@ -223,18 +223,29 @@ enum SettingsTypeMetrics {
 /// arrangement needs.
 ///
 /// Ventura lays both arrangements out and keeps the first that fits; Monterey
-/// cannot, so the pane is measured instead and the wide arrangement is taken
-/// while the width it states is available. The measurement is a two-argument
-/// reading of controls whose widths are already fixed.
+/// cannot, so the width the pane *offers* is read from a marker beside the row
+/// and compared with the width the wide arrangement states.
+///
+/// The marker is what makes that reading honest. A row measured on its own
+/// reports the width it took, not the width it was given — so once it has
+/// outgrown the pane, its own measurement is the overflowing width, and the row
+/// confirms that it fits by the very act of not fitting. The overflow it reports
+/// then lifts the whole window's layout: measured on Monterey against a 780 pt
+/// window, the header came out 896 pt wide with the navigation column pushed 58
+/// pt off the left edge. A zero-height `Color` takes whatever width it is
+/// offered and cannot overflow it, so `offeredWidth` is the number
+/// `ViewThatFits` would have compared against.
+///
+/// Until that width is known the row shows the arrangement that always fits, so
+/// neither the first pass nor the pass after a resize can lift the window
+/// either. The same probe folds the header at 536 pt and unfolds it at 756 pt,
+/// with the window's layout at 780 pt throughout.
 struct SettingsFittingRow<Wide: View, Narrow: View>: View {
     let wideMinimumWidth: CGFloat
     private let wide: () -> Wide
     private let narrow: () -> Narrow
 
-    /// Until the pane has been measured the wide arrangement is assumed: a
-    /// settings pane is written against the window's floor width, and a fold
-    /// that appears only after measuring is a fold nobody sees.
-    @State private var available: CGFloat = .greatestFiniteMagnitude
+    @State private var offeredWidth: CGFloat = 0
 
     init(
         wideMinimumWidth: CGFloat,
@@ -247,23 +258,29 @@ struct SettingsFittingRow<Wide: View, Narrow: View>: View {
     }
 
     var body: some View {
-        Group {
-            if #available(macOS 13.0, *) {
-                ViewThatFits(in: .horizontal) {
-                    wide()
-                    narrow()
-                }
-            } else if available >= wideMinimumWidth {
+        if #available(macOS 13.0, *) {
+            ViewThatFits(in: .horizontal) {
                 wide()
-            } else {
                 narrow()
             }
-        }
-        .background {
-            GeometryReader { proxy in
+        } else {
+            VStack(spacing: 0) {
+                // Flexible and zero-height: nothing about it can widen the pane,
+                // so what it reports is what the pane offered.
                 Color.clear
-                    .onAppear { available = proxy.size.width }
-                    .onChange(of: proxy.size.width) { value in available = value }
+                    .frame(height: 0)
+                    .background {
+                        GeometryReader { proxy in
+                            Color.clear
+                                .onAppear { offeredWidth = proxy.size.width }
+                                .onChange(of: proxy.size.width) { value in offeredWidth = value }
+                        }
+                    }
+                if offeredWidth >= wideMinimumWidth {
+                    wide()
+                } else {
+                    narrow()
+                }
             }
         }
     }
