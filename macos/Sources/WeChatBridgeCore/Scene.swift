@@ -597,19 +597,31 @@ public enum GroupTitleParser {
     private static let headerBand: CGFloat = 60
 
     public static func parse(_ lines: [Line], windowWidth: CGFloat) -> Title? {
-        let candidates = lines
-            .map {
-                Line(
-                    text: $0.text.trimmingCharacters(in: .whitespacesAndNewlines),
-                    minX: $0.minX,
-                    minY: $0.minY
-                )
-            }
-            .filter { !$0.text.isEmpty }
-            .filter { $0.minX >= windowWidth * chatListWidthFraction }
-            .filter { $0.minY <= headerBand }
-            .filter { looksLikeName($0.text) }
-            .sorted { $0.minY == $1.minY ? $0.minX < $1.minX : $0.minY < $1.minY }
+        // Written as separate statements with explicit types: the whole chain in
+        // one expression is more than the type checker will carry in reasonable
+        // time — CI said so at 600:13 before this was split up.
+        let trimmed: [Line] = lines.map { (line: Line) -> Line in
+            Line(
+                text: line.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                minX: line.minX,
+                minY: line.minY
+            )
+        }
+        let listRight: CGFloat = windowWidth * chatListWidthFraction
+        let readable: [Line] = trimmed.filter { (line: Line) -> Bool in !line.text.isEmpty }
+        let pastListColumn: [Line] = readable.filter { (line: Line) -> Bool in
+            line.minX >= listRight
+        }
+        let underHeaderBand: [Line] = pastListColumn.filter { (line: Line) -> Bool in
+            line.minY <= headerBand
+        }
+        let nameLike: [Line] = underHeaderBand.filter { (line: Line) -> Bool in
+            looksLikeName(line.text)
+        }
+        let candidates: [Line] = nameLike.sorted { (lhs: Line, rhs: Line) -> Bool in
+            if lhs.minY == rhs.minY { return lhs.minX < rhs.minX }
+            return lhs.minY < rhs.minY
+        }
 
         guard let header = candidates.first else { return nil }
         return countSuffix(in: header.text) ?? Title(name: header.text, memberCount: nil)
@@ -633,8 +645,14 @@ public enum GroupTitleParser {
     /// letters or ideographs. Recognition turns the window's buttons into
     /// strings like "①×09" and "+", and a chat list's clock column into
     /// "16:48" — none of which text alone would reject.
+    ///
+    /// A trailing member count is part of how a header reads, not evidence
+    /// against it: with " (128)" counted, "华东客户群 (128)" is five letters to
+    /// six marks and would be thrown away as chrome. The ratio is measured on
+    /// the name half, the same half `countSuffix` would return.
     private static func looksLikeName(_ text: String) -> Bool {
-        let characters = Array(text)
+        let name = countSuffix(in: text)?.name ?? text
+        let characters = Array(name)
         guard characters.count >= 2 else { return false }
         let wordy = characters.filter(\.isLetter).count
         return wordy * 2 >= characters.count

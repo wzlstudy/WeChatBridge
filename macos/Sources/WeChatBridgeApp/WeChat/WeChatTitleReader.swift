@@ -145,9 +145,10 @@ enum WeChatTitleReader {
         }
         let width = CGFloat(image.width) / max(scale, 1)
         let height = CGFloat(image.height) / max(scale, 1)
-        return (request.results ?? []).compactMap { observation in
-            guard let text = observation.topCandidates(1).first?.string else { return nil }
-            let box = observation.boundingBox
+        let results: [VNRecognizedTextObservation] = request.results ?? []
+        return results.compactMap { (observation: VNRecognizedTextObservation) -> GroupTitleParser.Line? in
+            guard let text: String = observation.topCandidates(1).first?.string else { return nil }
+            let box: CGRect = observation.boundingBox
             // Vision measures from the bottom-left; the parser measures from
             // the top-left corner of the window.
             return GroupTitleParser.Line(
