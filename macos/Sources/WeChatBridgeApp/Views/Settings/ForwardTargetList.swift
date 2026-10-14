@@ -76,13 +76,13 @@ struct ForwardTargetList: View {
                 )
                 .frame(height: Self.rowHeight)
                 .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
+                .settingsListRowSeparatorHidden()
                 .listRowBackground(Color.clear)
             }
             .onMove { targets.move(fromOffsets: $0, toOffset: $1) }
         }
         .listStyle(.plain)
-        .scrollContentBackground(.hidden)
+        .settingsScrollContentBackgroundHidden()
         .settingsScrollBounceBasedOnSize()
         .frame(height: Self.rowHeight * CGFloat(min(targets.targets.count, Self.visibleRows)))
         .padding(Space.xs)

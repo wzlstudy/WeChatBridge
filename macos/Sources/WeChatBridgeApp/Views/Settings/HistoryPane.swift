@@ -58,7 +58,7 @@ struct HistoryPane: View {
     }
 
     private var header: some View {
-        ViewThatFits(in: .horizontal) {
+        SettingsFittingRow(wideMinimumWidth: wideHeaderMinimumWidth) {
             HStack(spacing: Space.s) {
                 summary.fixedSize(horizontal: true, vertical: false)
                 Spacer(minLength: Space.s)
@@ -66,7 +66,7 @@ struct HistoryPane: View {
                 finderButton
                 moreMenu
             }
-
+        } narrow: {
             VStack(alignment: .leading, spacing: Space.s) {
                 HStack(spacing: Space.s) {
                     summary
@@ -82,17 +82,30 @@ struct HistoryPane: View {
         }
     }
 
-    private var summary: some View {
-        Text(
-            L10n.format("共 %d 条 · 占用 %@ · %@",
-                model.historyEntryCount,
-                ByteFormat.string(model.historyByteCount),
-                retentionText
-            )
+    /// The width the one-line header needs. The summary is the only piece whose
+    /// width moves — and it is `fixedSize`, so a header that runs out of room
+    /// has to fold rather than squeeze it.
+    private var wideHeaderMinimumWidth: CGFloat {
+        SettingsTypeMetrics.width(of: summaryText, in: SettingsTypeMetrics.captionFont)
+            + Self.searchWidth
+            + SettingsTypeMetrics.actionButtonWidth(L10n.text("在 Finder 中显示"))
+            + SettingsMoreActionsButton.side
+            + 4 * Space.s
+    }
+
+    private var summaryText: String {
+        L10n.format("共 %d 条 · 占用 %@ · %@",
+            model.historyEntryCount,
+            ByteFormat.string(model.historyByteCount),
+            retentionText
         )
-        .font(Typo.paneCaption)
-        .foregroundStyle(Theme.inkSecondary)
-        .lineLimit(1)
+    }
+
+    private var summary: some View {
+        Text(summaryText)
+            .font(Typo.paneCaption)
+            .foregroundStyle(Theme.inkSecondary)
+            .lineLimit(1)
     }
 
     private var retentionText: String {
@@ -101,9 +114,11 @@ struct HistoryPane: View {
             : L10n.format("默认保留 %d 天", preferences.historyRetentionDays)
     }
 
+    private static let searchWidth: CGFloat = 260
+
     private var searchField: some View {
         HistorySearchField(text: $query)
-            .frame(width: 260)
+            .frame(width: Self.searchWidth)
     }
 
     private var finderButton: some View {

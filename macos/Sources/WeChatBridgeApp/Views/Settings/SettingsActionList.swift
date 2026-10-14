@@ -114,8 +114,7 @@ struct SettingsActionList: View {
         }
         .buttonStyle(PlainPressButtonStyle(staticFeedback: true))
         .focusable(false)
-        .onContinuousHover { phase in
-            guard case .active = phase else { return }
+        .settingsPointerHover {
             let location = NSEvent.mouseLocation
             // Layout changes under a stationary pointer cannot override keys.
             guard location != pointerLocation else { return }
@@ -150,7 +149,9 @@ struct SettingsMoreActionsButton: View {
 
     @State private var expanded = false
     @FocusState private var focused: Bool
-    private static let side = SettingsControlMetrics.height
+    /// Square, because it holds one glyph; read by callers that have to say how
+    /// wide a row containing it is.
+    static let side = SettingsControlMetrics.height
 
     var body: some View {
         Button { expanded.toggle() } label: {
