@@ -95,7 +95,7 @@ final class ActionRunner {
             // Nothing is shown: the share sheet said 「已复制到剪贴板」 a moment
             // ago and is still on screen. A second capsule saying it again is
             // WeChatBridge talking over the system.
-        case .codex, .claude, .doubao, .qwen, .workBuddy, .weSight, .deepSeekHarness, .obsidian, .folder, .custom:
+        case .codex, .claude, .doubao, .qwen, .workBuddy, .weSight, .deepSeekHarness, .zCode, .obsidian, .folder, .custom:
             // Shares and WeChat captures share the same clipboard queue.
             //
             // Read here rather than where the panel opens. This forward may wait
@@ -467,7 +467,18 @@ final class ActionRunner {
         }
 
         do {
-            if action == .doubao, !pathOnly {
+            if action == .zCode, !pathOnly {
+                // Activation only: ZCode's composer has to be clicked before
+                // anything is pasted into it, and both the prompt and the files
+                // go through that same click — see `ZCodeAttachment`.
+                try await AutoPaste.activateAndPaste(
+                    applicationAt: applicationURL,
+                    bundleIdentifier: bundleIdentifier,
+                    displayName: name,
+                    plan: []
+                )
+                try await ZCodeAttachment.send(bundleIdentifier: bundleIdentifier, plan: plan)
+            } else if action == .doubao, !pathOnly {
                 // Doubao accepts pasted text but ignores file URLs on the
                 // pasteboard. Paste the prompt, then use its own upload picker.
                 let promptOnly = plan.filter {

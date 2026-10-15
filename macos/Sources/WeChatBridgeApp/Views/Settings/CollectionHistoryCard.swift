@@ -55,8 +55,9 @@ struct CollectionHistoryCard: View {
                     Button(L10n.text("取消")) { renaming = false }.buttonStyle(SettingsActionButtonStyle())
                 }
             }
-            ViewThatFits(in: .horizontal) {
+            SettingsFittingRow(wideMinimumWidth: wideRowWidth) {
                 HStack { expandButton; Spacer(); controls }
+            } narrow: {
                 VStack(alignment: .leading, spacing: Space.s) { expandButton; controls }
             }
             if model.deletedCollectionBatch?.collectionID == collection.id {
@@ -115,6 +116,23 @@ struct CollectionHistoryCard: View {
         Button(expanded ? L10n.text("收起批次") : L10n.text("查看批次")) { expanded.toggle() }
             .buttonStyle(SettingsActionButtonStyle())
     }
+
+    /// What 「查看批次」 and the delivery buttons need to share one line: the two
+    /// groups, the three gaps around the 8 pt spacer between them, and the same
+    /// few points of slack the 记录 header keeps — an estimate that comes out
+    /// short would put the whole window's layout under the card.
+    private var wideRowWidth: CGFloat {
+        var controlsWidth = SettingsTypeMetrics.actionButtonWidth(
+            collection.status == .retry ? L10n.text("重试交付") : L10n.text("完成并发送")
+        )
+        if collection.status != .delivered {
+            controlsWidth += Space.s + SettingsTypeMetrics.actionButtonWidth(L10n.text("继续收集"))
+        }
+        return SettingsTypeMetrics.actionButtonWidth(
+            expanded ? L10n.text("收起批次") : L10n.text("查看批次")
+        ) + 3 * Space.s + controlsWidth + Space.s
+    }
+
     private var controls: some View {
         HStack(spacing: Space.s) {
             if collection.status != .delivered {

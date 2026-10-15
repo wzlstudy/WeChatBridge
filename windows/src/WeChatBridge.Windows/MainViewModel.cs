@@ -920,7 +920,7 @@ public sealed partial class MainViewModel : INotifyPropertyChanged
         var builtIns = new[]
         {
             ShareAction.Codex, ShareAction.Claude, ShareAction.Doubao, ShareAction.Qwen,
-            ShareAction.WorkBuddy, ShareAction.WeSight, ShareAction.DeepSeekHarness, ShareAction.Obsidian, ShareAction.Folder,
+            ShareAction.WorkBuddy, ShareAction.WeSight, ShareAction.DeepSeekHarness, ShareAction.ZCode, ShareAction.Obsidian, ShareAction.Folder,
         }.Select(a => new ForwardDestination { Action = a });
         return builtIns
             .Concat(TargetRows.Select(t => new ForwardDestination { Action = ShareAction.Custom, Target = t.Target }))

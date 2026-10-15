@@ -40,7 +40,12 @@ struct HistoryPane: View {
                 recordList
             }
         }
-        .frame(maxWidth: 1120, alignment: .leading)
+        // No width cap: the window is the user's to spend, and 记录 is a list of
+        // cards and rows that is meant to run to the edges of it — a pane that
+        // stops at some invented maximum leaves a third of a full-screen
+        // display empty. Everything inside compresses (the header's fitting
+        // row, the rows' flexible titles) rather than clipping, so a narrow
+        // window is not the price of a wide one.
         .frame(maxWidth: .infinity, alignment: .leading)
         .alert(L10n.text("清空全部记录？"), isPresented: $confirmingClear) {
             Button(L10n.text("取消"), role: .cancel) {}
@@ -58,7 +63,7 @@ struct HistoryPane: View {
     }
 
     private var header: some View {
-        ViewThatFits(in: .horizontal) {
+        SettingsFittingRow(wideMinimumWidth: wideHeaderMinimumWidth) {
             HStack(spacing: Space.s) {
                 summary.fixedSize(horizontal: true, vertical: false)
                 Spacer(minLength: Space.s)
@@ -66,7 +71,7 @@ struct HistoryPane: View {
                 finderButton
                 moreMenu
             }
-
+        } narrow: {
             VStack(alignment: .leading, spacing: Space.s) {
                 HStack(spacing: Space.s) {
                     summary
@@ -82,17 +87,37 @@ struct HistoryPane: View {
         }
     }
 
-    private var summary: some View {
-        Text(
-            L10n.format("共 %d 条 · 占用 %@ · %@",
-                model.historyEntryCount,
-                ByteFormat.string(model.historyByteCount),
-                retentionText
-            )
+    /// The width the one-line header needs. The summary is the only piece whose
+    /// width moves — and it is `fixedSize`, so a header that runs out of room
+    /// has to fold rather than squeeze it.
+    ///
+    /// Deliberately a little more than the parts add up to: the five gaps are
+    /// the four between the five views plus the 8 pt floor the spacer keeps, the
+    /// labels are measured in AppKit and drawn by SwiftUI, and the slack is the
+    /// difference between folding a few points early — a second line — and
+    /// folding late, which is the pane pushing the window's layout apart.
+    private var wideHeaderMinimumWidth: CGFloat {
+        SettingsTypeMetrics.width(of: summaryText, in: SettingsTypeMetrics.captionFont)
+            + Self.searchWidth
+            + SettingsTypeMetrics.actionButtonWidth(L10n.text("在 Finder 中显示"))
+            + SettingsMoreActionsButton.side
+            + 5 * Space.s
+            + Space.s
+    }
+
+    private var summaryText: String {
+        L10n.format("共 %d 条 · 占用 %@ · %@",
+            model.historyEntryCount,
+            ByteFormat.string(model.historyByteCount),
+            retentionText
         )
-        .font(Typo.paneCaption)
-        .foregroundStyle(Theme.inkSecondary)
-        .lineLimit(1)
+    }
+
+    private var summary: some View {
+        Text(summaryText)
+            .font(Typo.paneCaption)
+            .foregroundStyle(Theme.inkSecondary)
+            .lineLimit(1)
     }
 
     private var retentionText: String {
@@ -101,9 +126,11 @@ struct HistoryPane: View {
             : L10n.format("默认保留 %d 天", preferences.historyRetentionDays)
     }
 
+    private static let searchWidth: CGFloat = 260
+
     private var searchField: some View {
         HistorySearchField(text: $query)
-            .frame(width: 260)
+            .frame(width: Self.searchWidth)
     }
 
     private var finderButton: some View {

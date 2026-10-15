@@ -13,6 +13,7 @@ public sealed class ShareEntryAvailabilityTests
     [InlineData(ShareAction.WorkBuddy)]
     [InlineData(ShareAction.WeSight)]
     [InlineData(ShareAction.DeepSeekHarness)]
+    [InlineData(ShareAction.ZCode)]
     [InlineData(ShareAction.Obsidian)]
     public void AppEntryRequiresFreshInstallationEvidence(ShareAction action)
     {

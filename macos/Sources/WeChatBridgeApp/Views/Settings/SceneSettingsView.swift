@@ -628,9 +628,7 @@ private struct SceneEditor: View {
                         Spacer(minLength: Space.s)
                         insertSkillMenu
                     }
-                    TextField(L10n.text("提示词"), text: promptBinding, axis: .vertical)
-                        .lineLimit(5...9)
-                        .textFieldStyle(SettingsTextFieldStyle(multiline: true))
+                    SettingsMultilineField(title: L10n.text("提示词"), text: promptBinding, lines: 5...9)
                 }
             }
 
@@ -1079,9 +1077,7 @@ private struct SceneField: View {
             if lines.upperBound == 1 {
                 TextField(title, text: $text).textFieldStyle(SettingsTextFieldStyle())
             } else {
-                TextField(title, text: $text, axis: .vertical)
-                    .lineLimit(lines)
-                    .textFieldStyle(SettingsTextFieldStyle(multiline: true))
+                SettingsMultilineField(title: title, text: $text, lines: lines)
             }
         }
     }

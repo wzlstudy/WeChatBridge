@@ -568,29 +568,102 @@ public enum GroupTitleParser {
         }
     }
 
-    public static func parse(_ lines: [String]) -> Title? {
-        let candidates = lines.map {
-            $0.trimmingCharacters(in: .whitespacesAndNewlines)
-        }.filter { !$0.isEmpty }
+    /// A line of recognised text and where it sat in the window it was read
+    /// from, in points, measured from that window's top-left corner.
+    public struct Line: Equatable, Sendable {
+        public let text: String
+        public let minX: CGFloat
+        public let minY: CGFloat
 
-        // A group title usually carries a member count. Prefer that over
-        // unrelated chrome OCR'd from elsewhere in the same title strip.
-        for line in candidates {
-            let range = NSRange(line.startIndex..<line.endIndex, in: line)
-            if let match = try? NSRegularExpression(pattern: #"[（(]\s*(\d{1,5})\s*[)）]\s*$"#)
-                .firstMatch(in: line, range: range),
-               let full = Range(match.range(at: 0), in: line),
-               let numberRange = Range(match.range(at: 1), in: line),
-               let count = Int(line[numberRange]) {
-                let name = String(line[..<full.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
-                if !name.isEmpty { return Title(name: name, memberCount: count) }
-            }
+        public init(text: String, minX: CGFloat, minY: CGFloat) {
+            self.text = text
+            self.minX = minX
+            self.minY = minY
         }
-        var best: String?
-        for line in candidates where best == nil || line.count > best!.count {
-            best = line
+    }
+
+    /// Where the conversation header sits, measured on WeChat 4.1 against a
+    /// 1680 pt window: the chat list's rows begin at x ≈ 0.04 and stay left of
+    /// 0.10, its message previews are the longest lines in the strip, and the
+    /// row that carries a member count is a *list* row, not the header. The
+    /// header itself starts at x ≈ 0.17 and sits at y ≈ 19, with the first list
+    /// row at y ≈ 64 and the first message of the conversation at y ≈ 99.
+    ///
+    /// Text alone cannot tell them apart — every candidate is a group name, and
+    /// taking the longest or the counted one once recorded the wrong group.
+    /// Geometry can: the header is the topmost line past the list column, in
+    /// the band above the first row, that reads like a name.
+    ///
+    /// The window's own chrome shares that band. WeChat draws its top-right
+    /// buttons at x ≈ 0.85–0.92 and y ≈ 18 — a point *above* the header — and
+    /// recognition reads them as text: ①×09 on one capture, ©、QS on another,
+    /// which passed the name shape (two letters in four marks) and won on
+    /// minY. Nothing legitimate sits that far right, so the band ends at 0.80.
+    private static let chatListWidthFraction: CGFloat = 0.10
+    private static let headerRightEdgeFraction: CGFloat = 0.80
+    private static let headerBand: CGFloat = 60
+
+    public static func parse(_ lines: [Line], windowWidth: CGFloat) -> Title? {
+        // Written as separate statements with explicit types: the whole chain in
+        // one expression is more than the type checker will carry in reasonable
+        // time — CI said so at 600:13 before this was split up.
+        let trimmed: [Line] = lines.map { (line: Line) -> Line in
+            Line(
+                text: line.text.trimmingCharacters(in: .whitespacesAndNewlines),
+                minX: line.minX,
+                minY: line.minY
+            )
         }
-        return best.map { Title(name: $0, memberCount: nil) }
+        let listRight: CGFloat = windowWidth * chatListWidthFraction
+        let headerRight: CGFloat = windowWidth * headerRightEdgeFraction
+        let readable: [Line] = trimmed.filter { (line: Line) -> Bool in !line.text.isEmpty }
+        let pastListColumn: [Line] = readable.filter { (line: Line) -> Bool in
+            line.minX >= listRight && line.minX <= headerRight
+        }
+        let underHeaderBand: [Line] = pastListColumn.filter { (line: Line) -> Bool in
+            line.minY <= headerBand
+        }
+        let nameLike: [Line] = underHeaderBand.filter { (line: Line) -> Bool in
+            looksLikeName(line.text)
+        }
+        let candidates: [Line] = nameLike.sorted { (lhs: Line, rhs: Line) -> Bool in
+            if lhs.minY == rhs.minY { return lhs.minX < rhs.minX }
+            return lhs.minY < rhs.minY
+        }
+
+        guard let header = candidates.first else { return nil }
+        return countSuffix(in: header.text) ?? Title(name: header.text, memberCount: nil)
+    }
+
+    /// "华东客户群 (128)" is one line: the name, then how many people are in it.
+    private static func countSuffix(in line: String) -> Title? {
+        let range = NSRange(line.startIndex..<line.endIndex, in: line)
+        guard let match = try? NSRegularExpression(pattern: #"[（(]\s*(\d{1,5})\s*[)）]\s*$"#)
+            .firstMatch(in: line, range: range),
+            let full = Range(match.range(at: 0), in: line),
+            let numberRange = Range(match.range(at: 1), in: line),
+            let count = Int(line[numberRange])
+        else { return nil }
+        let name = String(line[..<full.lowerBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        return Title(name: name, memberCount: count)
+    }
+
+    /// A name, not chrome: at least two characters, and at least half of them
+    /// letters or ideographs. Recognition turns the window's buttons into
+    /// strings like "①×09" and "+", and a chat list's clock column into
+    /// "16:48" — none of which text alone would reject.
+    ///
+    /// A trailing member count is part of how a header reads, not evidence
+    /// against it: with " (128)" counted, "华东客户群 (128)" is five letters to
+    /// six marks and would be thrown away as chrome. The ratio is measured on
+    /// the name half, the same half `countSuffix` would return.
+    private static func looksLikeName(_ text: String) -> Bool {
+        let name = countSuffix(in: text)?.name ?? text
+        let characters = Array(name)
+        guard characters.count >= 2 else { return false }
+        let wordy = characters.filter(\.isLetter).count
+        return wordy * 2 >= characters.count
     }
 }
 

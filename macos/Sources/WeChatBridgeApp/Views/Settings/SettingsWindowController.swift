@@ -93,6 +93,14 @@ final class SettingsWindowController {
         // A window that can be resized and then forgets reads as one that is
         // still fixed.
         _ = window.setFrameAutosaveName("WeChatBridgeSettings")
+        // Deliberately without `fullScreenPrimary`, so the green button zooms to
+        // the visible frame — the behaviour menu bar apps like Bob ship, and the
+        // one this window's title bar is drawn for. Full screen is a worse deal
+        // for an accessory app than it looks: macOS gives the app a Space of its
+        // own, but an accessory app owns neither the menu bar nor the ability to
+        // activate itself, so on Monterey the window ended up on a Space the user
+        // could not reach and the traffic lights — the only way out — went with
+        // it. Zooming keeps them on screen.
         self.window = window
 
         window.makeKeyAndOrderFront(nil)

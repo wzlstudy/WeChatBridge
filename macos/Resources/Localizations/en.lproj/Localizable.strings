@@ -132,6 +132,7 @@
 "激活豆包并直接粘贴到输入框。" = "Brings Doubao forward and pastes straight into its input.";
 "激活 WeSight 并直接粘贴到输入框。" = "Brings WeSight forward and pastes straight into its input.";
 "激活 DeepSeek Harness 并直接粘贴到输入框。" = "Brings DeepSeek Harness forward and pastes straight into its input.";
+"激活 ZCode 并直接粘贴到输入框。" = "Brings ZCode forward and pastes straight into its input.";
 "把聊天记录转成 Markdown，写入选定的 Obsidian 知识库。" = "Turns the chat archive into Markdown and writes it into the selected Obsidian vault.";
 "把聊天记录转成 Markdown 和附件，写入选定的文件夹。" = "Turns the chat into Markdown and attachments in the folder you choose.";
 "只放进剪贴板，去哪儿按 ⌘V 由你决定。" = "Puts them on the clipboard and leaves the ⌘V to you.";
@@ -215,7 +216,7 @@
 "以后随时能在设置 → 入口 里改。" = "You can change these any time in Settings → Entries.";
 "转发到其他应用" = "Forward to Another App";
 "让 WeChatBridge 代你按 ⌘V" = "Let WeChatBridge press ⌘V for you";
-"用于激活目标应用并粘贴；只复制不需要。" = "Used to bring the destination app forward and paste. Copying does not need it.";
+"用于激活目标应用并粘贴；也让群名直接读取，不靠屏幕识别。" = "Used to bring the destination app forward and paste. It also lets group names be read directly instead of recognised from the screen.";
 "可以先跳过，第一次转发失败时 WeChatBridge 会再引导一次。" = "You can skip this — WeChatBridge will offer to walk you through it the first time a forward fails.";
 "稍后再说" = "Later";
 "好了" = "All set";
@@ -357,6 +358,8 @@
 "无法解包“%@”。" = "Could not expand \"%@\".";
 "压缩包“%@”里没有豆包可读取的文件。" = "\"%@\" contains no files that Doubao can read.";
 "豆包没有接住文件“%@”。" = "Doubao did not accept the file \"%@\".";
+"ZCode 没有接住文件“%@”。" = "ZCode did not accept the file \"%@\".";
+"没有在 ZCode 窗口里找到输入框。" = "No input field was found in the ZCode window.";
 "请直接读取并解压以下本机文件，使用其中的内容完成场景要求。" = "Read and extract the following local files directly, then use their contents to complete the scene requirements.";
 "客户复盘" = "Customer review";
 "项目周会" = "Project sync";

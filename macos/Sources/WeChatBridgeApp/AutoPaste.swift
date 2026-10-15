@@ -257,7 +257,9 @@ enum AutoPaste {
     /// would send the wrong key.
     private static let virtualKeyV: CGKeyCode = 0x09
 
-    private static func pressCommandV() throws {
+    /// Not private: `ZCodeAttachment` presses the same key after putting the
+    /// click where `focusTextInput` only sets an attribute.
+    static func pressCommandV() throws {
         let source = CGEventSource(stateID: .combinedSessionState)
         guard
             let keyDown = CGEvent(keyboardEventSource: source, virtualKey: virtualKeyV, keyDown: true),

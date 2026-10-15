@@ -84,6 +84,7 @@ final class SceneTests: XCTestCase {
         XCTAssertTrue(decodedV2.isOfficial)
         XCTAssertEqual(AgentID.matching(.weSight), .weSight)
         XCTAssertNil(AgentID.matching(.deepSeekHarness))
+        XCTAssertNil(AgentID.matching(.zCode))
     }
 
     func testOfficialTaskCopiesToAnEditableUserTask() {
@@ -245,24 +246,104 @@ final class SceneTests: XCTestCase {
         )
     }
 
+    private func line(_ text: String, x: CGFloat, y: CGFloat) -> GroupTitleParser.Line {
+        GroupTitleParser.Line(text: text, minX: x, minY: y)
+    }
+
     func testGroupTitleParserHandlesCountsAndPlainNames() {
         XCTAssertEqual(
-            GroupTitleParser.parse(["华东客户群 (128)"])?.name,
+            GroupTitleParser.parse([line("华东客户群 (128)", x: 300, y: 19)], windowWidth: 1680)?.name,
             "华东客户群"
         )
         XCTAssertEqual(
-            GroupTitleParser.parse(["本周项目会（12）"])?.memberCount,
+            GroupTitleParser.parse([line("本周项目会（12）", x: 300, y: 19)], windowWidth: 1680)?.memberCount,
             12
         )
         XCTAssertEqual(
-            GroupTitleParser.parse(["没有人数"])?.name,
+            GroupTitleParser.parse([line("没有人数", x: 300, y: 19)], windowWidth: 1680)?.name,
             "没有人数"
         )
-        XCTAssertNil(GroupTitleParser.parse(["   "]))
+        XCTAssertNil(GroupTitleParser.parse([line("   ", x: 300, y: 19)], windowWidth: 1680))
+    }
 
+    /// The bug this parser is shaped around: every line in the strip is a group
+    /// name, so "longest line" and "line with a member count" both picked the
+    /// chat list — and a record was filed under a group it never came from.
+    func testGroupTitleParserReadsTheConversationHeaderNotTheChatList() {
+        // Positions measured on WeChat 4.1 against a 1680 pt window; the names
+        // are placeholders, the geometry is not.
+        let lines = [
+            line("搜索", x: 78, y: 20),
+            line("+", x: 240, y: 21),
+            line("客户项目群", x: 289, y: 19),
+            line("①×09", x: 1550, y: 18),
+            line("家庭群 星期四", x: 114, y: 64),
+            line("某某人：晚上一起吃饭吗…", x: 72, y: 82),
+            line("周末去看电影吗", x: 1433, y: 99)
+        ]
         XCTAssertEqual(
-            GroupTitleParser.parse(["微信", "华东客户群 (128)", "搜索"])?.name,
-            "华东客户群"
+            GroupTitleParser.parse(lines, windowWidth: 1680)?.name,
+            "客户项目群"
+        )
+    }
+
+    /// WeChat's own top-right buttons sit in the header band, a point above the
+    /// header itself, and recognition reads them as text. `©、QS` passed the
+    /// name shape — two letters in four marks — and won on position, which is
+    /// how a batch came back named after the buttons (measured 2026-10-15).
+    func testGroupTitleParserIgnoresTheWindowButtons() {
+        let lines = [
+            line("©、QS", x: 1550, y: 18),
+            line("客户项目群 (438)", x: 289, y: 19)
+        ]
+        XCTAssertEqual(
+            GroupTitleParser.parse(lines, windowWidth: 1680)?.name,
+            "客户项目群"
+        )
+    }
+
+    /// With nothing but the buttons in the strip there is no name to record,
+    /// which beats recording theirs.
+    func testGroupTitleParserRefusesTheWindowButtonsAlone() {
+        let lines = [
+            line("©、QS", x: 1550, y: 18),
+            line("①×09", x: 1548, y: 19)
+        ]
+        XCTAssertNil(GroupTitleParser.parse(lines, windowWidth: 1680))
+    }
+
+    func testGroupTitleParserOnlyCountsTheHeader() {
+        let lines = [
+            line("开源项目实战 (438)", x: 120, y: 70),
+            line("客户项目群（12）", x: 289, y: 19)
+        ]
+        let title = GroupTitleParser.parse(lines, windowWidth: 1680)
+        XCTAssertEqual(title?.name, "客户项目群")
+        XCTAssertEqual(title?.memberCount, 12)
+    }
+
+    /// No conversation open is no name at all, which the row can say out loud —
+    /// unlike the wrong name it used to record.
+    func testGroupTitleParserRefusesTheChatListAlone() {
+        let lines = [
+            line("搜索", x: 78, y: 20),
+            line("家庭群 星期四", x: 114, y: 64),
+            line("某某人：晚上一起吃饭吗…", x: 72, y: 82),
+            line("①×09", x: 1550, y: 18)
+        ]
+        XCTAssertNil(GroupTitleParser.parse(lines, windowWidth: 1680))
+    }
+
+    /// A window whose title bar is drawn pushes the header down; it is still
+    /// above the first list row.
+    func testGroupTitleParserAcceptsAHeaderBelowTallerChrome() {
+        let lines = [
+            line("客户项目群", x: 289, y: 47),
+            line("家庭群 星期四", x: 114, y: 92)
+        ]
+        XCTAssertEqual(
+            GroupTitleParser.parse(lines, windowWidth: 1680)?.name,
+            "客户项目群"
         )
     }
 

@@ -414,8 +414,8 @@ struct SettingsChoiceList<Value: Hashable>: View {
         .buttonStyle(PlainPressButtonStyle(staticFeedback: true))
         .focusable(false)
         .disabled(disabled)
-        .onContinuousHover { phase in
-            guard case .active = phase, !disabled else { return }
+        .settingsPointerHover {
+            guard !disabled else { return }
             let location = NSEvent.mouseLocation
             // Layout changes under a stationary pointer cannot override keys.
             guard location != pointerLocation else { return }

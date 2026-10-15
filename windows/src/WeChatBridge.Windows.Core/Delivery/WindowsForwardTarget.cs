@@ -147,6 +147,21 @@ public static class WindowsForwardTargets
                 ["DeepSeek Harness", "DeepSeekHarness"],
                 [@"%LOCALAPPDATA%\Programs\DeepSeek Harness\DeepSeek Harness.exe",
                  "DeepSeek Harness.exe", "DeepSeekHarness.exe"]),
+            // Not verified on device: no Windows machine was available. The
+            // candidates are electron-builder's per-user default plus the
+            // machine-wide path, so whichever copy the user installed is found.
+            // ReadsLocalArchives stays off — the macOS build takes a pasted
+            // ZIP (verified 2026-10-15), and this is the same renderer; if the
+            // Windows build turns out to ignore the drop, flip it and the
+            // archive goes as a path like Doubao's and 千问's.
+            [ShareAction.ZCode] = new(
+                "ZCode",
+                ["ZCode"],
+                [
+                    @"%LOCALAPPDATA%\Programs\ZCode\ZCode.exe",
+                    @"%ProgramFiles%\ZCode\ZCode.exe",
+                    "ZCode.exe",
+                ]),
             [ShareAction.WeSight] = new(
                 "WeSight",
                 ["WeSight"],
