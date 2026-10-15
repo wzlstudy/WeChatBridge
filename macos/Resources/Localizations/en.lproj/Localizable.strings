@@ -358,6 +358,8 @@
 "无法解包“%@”。" = "Could not expand \"%@\".";
 "压缩包“%@”里没有豆包可读取的文件。" = "\"%@\" contains no files that Doubao can read.";
 "豆包没有接住文件“%@”。" = "Doubao did not accept the file \"%@\".";
+"ZCode 没有接住文件“%@”。" = "ZCode did not accept the file \"%@\".";
+"没有在 ZCode 窗口里找到输入框。" = "No input field was found in the ZCode window.";
 "请直接读取并解压以下本机文件，使用其中的内容完成场景要求。" = "Read and extract the following local files directly, then use their contents to complete the scene requirements.";
 "客户复盘" = "Customer review";
 "项目周会" = "Project sync";
