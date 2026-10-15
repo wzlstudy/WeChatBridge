@@ -287,6 +287,31 @@ final class SceneTests: XCTestCase {
         )
     }
 
+    /// WeChat's own top-right buttons sit in the header band, a point above the
+    /// header itself, and recognition reads them as text. `©、QS` passed the
+    /// name shape — two letters in four marks — and won on position, which is
+    /// how a batch came back named after the buttons (measured 2026-10-15).
+    func testGroupTitleParserIgnoresTheWindowButtons() {
+        let lines = [
+            line("©、QS", x: 1550, y: 18),
+            line("客户项目群 (438)", x: 289, y: 19)
+        ]
+        XCTAssertEqual(
+            GroupTitleParser.parse(lines, windowWidth: 1680)?.name,
+            "客户项目群"
+        )
+    }
+
+    /// With nothing but the buttons in the strip there is no name to record,
+    /// which beats recording theirs.
+    func testGroupTitleParserRefusesTheWindowButtonsAlone() {
+        let lines = [
+            line("©、QS", x: 1550, y: 18),
+            line("①×09", x: 1548, y: 19)
+        ]
+        XCTAssertNil(GroupTitleParser.parse(lines, windowWidth: 1680))
+    }
+
     func testGroupTitleParserOnlyCountsTheHeader() {
         let lines = [
             line("开源项目实战 (438)", x: 120, y: 70),

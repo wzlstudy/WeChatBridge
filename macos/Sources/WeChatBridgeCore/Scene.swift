@@ -593,7 +593,14 @@ public enum GroupTitleParser {
     /// taking the longest or the counted one once recorded the wrong group.
     /// Geometry can: the header is the topmost line past the list column, in
     /// the band above the first row, that reads like a name.
+    ///
+    /// The window's own chrome shares that band. WeChat draws its top-right
+    /// buttons at x ≈ 0.85–0.92 and y ≈ 18 — a point *above* the header — and
+    /// recognition reads them as text: ①×09 on one capture, ©、QS on another,
+    /// which passed the name shape (two letters in four marks) and won on
+    /// minY. Nothing legitimate sits that far right, so the band ends at 0.80.
     private static let chatListWidthFraction: CGFloat = 0.10
+    private static let headerRightEdgeFraction: CGFloat = 0.80
     private static let headerBand: CGFloat = 60
 
     public static func parse(_ lines: [Line], windowWidth: CGFloat) -> Title? {
@@ -608,9 +615,10 @@ public enum GroupTitleParser {
             )
         }
         let listRight: CGFloat = windowWidth * chatListWidthFraction
+        let headerRight: CGFloat = windowWidth * headerRightEdgeFraction
         let readable: [Line] = trimmed.filter { (line: Line) -> Bool in !line.text.isEmpty }
         let pastListColumn: [Line] = readable.filter { (line: Line) -> Bool in
-            line.minX >= listRight
+            line.minX >= listRight && line.minX <= headerRight
         }
         let underHeaderBand: [Line] = pastListColumn.filter { (line: Line) -> Bool in
             line.minY <= headerBand
