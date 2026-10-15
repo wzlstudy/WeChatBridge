@@ -349,6 +349,7 @@ public sealed class DeliveryTargetTableTests
                  {
                      ShareAction.Codex, ShareAction.Claude, ShareAction.Doubao,
                      ShareAction.Qwen, ShareAction.WorkBuddy, ShareAction.WeSight,
+                     ShareAction.ZCode,
                  })
         {
             var spec = WindowsForwardTargets.For(action);
@@ -375,6 +376,9 @@ public sealed class DeliveryTargetTableTests
         Assert.False(WindowsForwardTargets.For(ShareAction.Claude)!.ReadsLocalArchives);
         Assert.False(WindowsForwardTargets.For(ShareAction.WorkBuddy)!.ReadsLocalArchives);
         Assert.False(WindowsForwardTargets.For(ShareAction.WeSight)!.ReadsLocalArchives);
+        // macOS ZCode takes a pasted ZIP (verified on device 2026-10-15), so
+        // the Windows entry does too until a device says otherwise.
+        Assert.False(WindowsForwardTargets.For(ShareAction.ZCode)!.ReadsLocalArchives);
     }
 
     [Fact]

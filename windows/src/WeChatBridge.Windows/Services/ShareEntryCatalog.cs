@@ -53,6 +53,7 @@ public static class ShareEntryCatalog
         ShareAction.Collect => L10n.Text("连续收集多批原始 ZIP，最后统一交付。"),
         ShareAction.Folder => settings.DeliveryFolderPath is { Length: > 0 } folder
             ? L10n.Format($"文件夹：{new DirectoryInfo(folder).Name}") : L10n.Text("未选择文件夹"),
+        ShareAction.ZCode => L10n.Text("激活 ZCode 并直接粘贴到输入框。"),
         ShareAction.WeSight => L10n.Text("激活 WeSight 并直接粘贴到输入框。"),
         ShareAction.Obsidian => settings.ObsidianVaultPath is { Length: > 0 } path
             ? L10n.Format($"知识库：{new DirectoryInfo(path).Name}")

@@ -334,7 +334,7 @@ public sealed class CollectionTests
     [Fact]
     public void AllMacOSShareActionsRoundTripIncludingNewDestinations()
     {
-        Assert.Equal(12, ShareActions.All.Count);
+        Assert.Equal(13, ShareActions.All.Count);
         foreach (var action in ShareActions.All)
             Assert.Equal(action, JsonSerializer.Deserialize<ShareAction>(JsonSerializer.Serialize(action, BatchManifest.JsonOptions), BatchManifest.JsonOptions));
         Assert.Equal(AgentId.DeepSeekHarness, AgentIds.Matching(ShareAction.DeepSeekHarness));

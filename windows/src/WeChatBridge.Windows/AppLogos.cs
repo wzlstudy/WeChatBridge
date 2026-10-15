@@ -38,10 +38,14 @@ public static class AppLogos
     /// plus the two pseudo-agents macOS also badges (Obsidian, clipboard has
     /// none).
     /// </summary>
-    public static string? PathFor(ShareAction action) =>
-        action == ShareAction.Obsidian
-            ? Existing("05-obsidian.png")
-            : AgentIds.Matching(action) is { } agent ? PathFor(agent) : null;
+    public static string? PathFor(ShareAction action) => action switch
+    {
+        ShareAction.Obsidian => Existing("05-obsidian.png"),
+        // ZCode has no AgentId — it is a forwarding destination, not a skill
+        // target — but it ships the same mark the macOS 入口 pane shows.
+        ShareAction.ZCode => Existing("08-zcode.png"),
+        _ => AgentIds.Matching(action) is { } agent ? PathFor(agent) : null,
+    };
 
     /// <summary>Loose lookup by target display name for custom targets.</summary>
     public static string? PathFor(string? displayName)
@@ -53,6 +57,8 @@ public static class AppLogos
                 return Existing(file);
         if (displayName.Contains("Obsidian", StringComparison.OrdinalIgnoreCase))
             return Existing("05-obsidian.png");
+        if (displayName.Contains("ZCode", StringComparison.OrdinalIgnoreCase))
+            return Existing("08-zcode.png");
         return null;
     }
 
