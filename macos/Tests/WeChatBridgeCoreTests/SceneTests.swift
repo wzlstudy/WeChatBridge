@@ -84,6 +84,7 @@ final class SceneTests: XCTestCase {
         XCTAssertTrue(decodedV2.isOfficial)
         XCTAssertEqual(AgentID.matching(.weSight), .weSight)
         XCTAssertNil(AgentID.matching(.deepSeekHarness))
+        XCTAssertNil(AgentID.matching(.zCode))
     }
 
     func testOfficialTaskCopiesToAnEditableUserTask() {

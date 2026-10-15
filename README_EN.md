@@ -23,7 +23,7 @@
 
 WeChat 4.1.13 for macOS introduced merged forwarding to third-party apps. It exports selected messages as a ZIP containing an ordered text transcript, images, and videos—a useful input format for AI agents and local knowledge bases.
 
-The macOS “forward to other apps” menu only lists apps that ship a Share Extension. WeChatBridge adds that missing layer and routes one export to Codex, Claude, Doubao, QwenWork, WorkBuddy, WeSight, DeepSeek Harness, Obsidian, the clipboard, or another app you choose.
+The macOS “forward to other apps” menu only lists apps that ship a Share Extension. WeChatBridge adds that missing layer and routes one export to Codex, Claude, Doubao, QwenWork, WorkBuddy, WeSight, DeepSeek Harness, ZCode, Obsidian, the clipboard, or another app you choose.
 
 ```mermaid
 flowchart LR
@@ -59,6 +59,7 @@ flowchart LR
 | Send to WorkBuddy | Activate WorkBuddy and paste the conversation archive |
 | Send to WeSight | Activate WeSight and paste the conversation archive |
 | Send to DeepSeek Harness | Activate DeepSeek Harness and paste the conversation archive |
+| Send to ZCode | Activate ZCode and paste the conversation archive |
 | Save to Obsidian | Create a Markdown note and preserve the original attachment |
 | Save to folder | Write Markdown and attachments to the selected folder; reveal files from the notification |
 | Collect in WeChatBridge | Receive multiple original ZIPs, then choose a target and scene once |
@@ -83,7 +84,7 @@ Pick a destination straight from WeChat's “Forward to other apps” menu, with
     <td align="center"><img src="shared/Screenshots/usage-scenes.png" width="420" alt="Scene management pane" /></td>
   </tr>
   <tr>
-    <td align="center"><sub>Toggle any of the twelve entries; missing apps are flagged</sub></td>
+    <td align="center"><sub>Toggle any of the thirteen entries; missing apps are flagged</sub></td>
     <td align="center"><sub>Scenes store prompts and their agents, chosen at forward time</sub></td>
   </tr>
   <tr>
@@ -156,7 +157,7 @@ shared/                   # Agent logos, design assets, screenshots, and skills
 site/                     # Sparkle update feed and release notes
 ```
 
-Swift Package Manager owns the source layout and the Sparkle dependency. `macos/Scripts/make-app.sh` assembles the host executable and twelve Share Extensions into a complete `.app` bundle.
+Swift Package Manager owns the source layout and the Sparkle dependency. `macos/Scripts/make-app.sh` assembles the host executable and thirteen Share Extensions into a complete `.app` bundle.
 
 ## Development checks
 

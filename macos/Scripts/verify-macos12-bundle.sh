@@ -5,7 +5,7 @@
 # just assembled, and once on the copy inside the finished DMG, because only the
 # second one is what a user installs. It answers the questions a build log
 # cannot: whether every Mach-O really stops at Monterey, whether the Universal 2
-# half is there for an Intel Mac, whether all twelve Share-menu entries and the
+# half is there for an Intel Mac, whether all thirteen Share-menu entries and the
 # login helper survived assembly, whether the resources a feature reads at
 # run time are inside the bundle, and whether the signatures say what the plists
 # say — an app and an extension on different sides of an app group is the one
@@ -134,7 +134,7 @@ fi
 check_floor "$APP/Contents/MacOS/WeChatBridge" "the app" "$APP_MINIMUM_OS"
 check_architectures "$APP/Contents/MacOS/WeChatBridge" "the app"
 
-# The Share-menu entries are the app's whole surface: twelve signed appexes that
+# The Share-menu entries are the app's whole surface: thirteen signed appexes that
 # all run the same executable and tell themselves apart by DKShareAction.
 APPEX_COUNT=0
 for SLOT_ROW in "${SHARE_SLOTS[@]}"; do
@@ -163,7 +163,7 @@ else
 	pass "all ${#SHARE_SLOTS[@]} share entries are present and consistent"
 fi
 
-# One executable, shipped twelve times over: it is checked once.
+# One executable, shipped thirteen times over: it is checked once.
 FIRST_APPEX_NAME="${SHARE_SLOTS[0]#*|}"
 FIRST_APPEX_NAME="${FIRST_APPEX_NAME%%|*}"
 FIRST_APPEX="$APP/Contents/PlugIns/$FIRST_APPEX_NAME.appex"

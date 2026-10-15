@@ -16,7 +16,7 @@ final class ShareActionTests: XCTestCase {
     }
 
     func testOnlyForwardingActionsNameATargetApp() {
-        XCTAssertEqual(ShareAction.allCases.count, 12)
+        XCTAssertEqual(ShareAction.allCases.count, 13)
         XCTAssertEqual(ShareAction.codex.targetBundleIdentifier, "com.openai.codex")
         XCTAssertEqual(ShareAction.claude.targetBundleIdentifier, "com.anthropic.claudefordesktop")
         XCTAssertEqual(ShareAction.doubao.targetBundleIdentifier, "com.bot.pc.doubao")
@@ -24,6 +24,7 @@ final class ShareActionTests: XCTestCase {
         XCTAssertEqual(ShareAction.workBuddy.targetBundleIdentifier, "com.tencent.workbuddy.mac")
         XCTAssertEqual(ShareAction.weSight.targetBundleIdentifier, "ai.wesight.app")
         XCTAssertEqual(ShareAction.deepSeekHarness.targetBundleIdentifier, "com.deepseek.dsh")
+        XCTAssertEqual(ShareAction.zCode.targetBundleIdentifier, "dev.zcode.app")
         XCTAssertEqual(ShareAction.obsidian.targetBundleIdentifier, "md.obsidian")
         XCTAssertNil(ShareAction.clipboard.targetBundleIdentifier)
         // 「沉淀到文件夹」 delivers to a path, not an app.
@@ -84,7 +85,7 @@ final class ShareActionTests: XCTestCase {
         XCTAssertFalse(ShareAction.clipboard.needsIntent)
         for action in [
             ShareAction.codex, .claude, .doubao, .qwen, .workBuddy,
-            .weSight, .deepSeekHarness, .obsidian, .folder, .custom,
+            .weSight, .deepSeekHarness, .zCode, .obsidian, .folder, .custom,
         ] {
             XCTAssertTrue(action.needsIntent, "\(action)")
         }

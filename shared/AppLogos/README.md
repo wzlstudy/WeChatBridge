@@ -9,10 +9,14 @@ Official 1024 x 1024 App Store artwork, ordered for the forwarding flow:
 5. `05-obsidian.png` - [Obsidian](https://apps.apple.com/cn/app/id1557175442)
 6. `06-workbuddy.png` - [WorkBuddy](https://apps.apple.com/cn/app/id6761374913)
 7. `07-wesight.png` - WeSight
+8. `08-zcode.png` - ZCode
 
 Doubao, Qwen, Obsidian, and WorkBuddy use the China App Store listing.
 Claude and ChatGPT have no China App Store listing, so their official
-international artwork is used.
+international artwork is used. WeSight and ZCode have no listing at all: their
+files are the 1024 pt representation from the icon the installed app ships
+(`ZCode.app/Contents/Resources/icon.icns`), which is the same artwork the
+settings pane falls back to when the app is missing.
 
 `macos/Scripts/make-app.sh` turns these into one `.icns` per matching Share
 Extension. The settings pane uses the same files when the destination app is
